@@ -137,7 +137,6 @@
       margin-right: 0.4em;
     }
     #result { margin-top: 1.5rem; display: none; }
-    #result.visible { display: block; }
     .result-inner {
       border: 1px solid var(--border);
       background: var(--accent-dim);
@@ -174,7 +173,6 @@
     .dl-btn:active { transform: scale(0.97); }
     #picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
     .picker-item { border: 1px solid var(--border); background: var(--surface); overflow: hidden; display: flex; flex-direction: column; }
-    .picker-item img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
     .picker-item a {
       display: block;
       text-align: center;
@@ -187,7 +185,6 @@
       text-decoration: none;
       transition: background 0.15s;
     }
-    .picker-item a:hover { background: #f5ff44; }
     .supported { margin-top: 3rem; text-align: center; animation: fadeUp 0.6s 0.25s ease both; }
     .supported p { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.8rem; }
     .platforms { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 540px; }
@@ -202,16 +199,9 @@
     }
     .platform-tag:hover { color: var(--accent); border-color: var(--accent); }
     footer { margin-top: 3rem; font-size: 0.6rem; letter-spacing: 0.12em; color: #333; text-align: center; animation: fadeUp 0.6s 0.35s ease both; }
-    footer a { color: #444; text-decoration: none; }
-    footer a:hover { color: var(--muted); }
     @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @media (max-width: 480px) {
-      .card { padding: 1.4rem; }
-      .input-row { flex-direction: column; }
-      #grab-btn { padding: 0.85rem; width: 100%; }
-    }
   </style>
 </head>
 <body>
@@ -234,7 +224,6 @@
             <option value="1080" selected>1080p</option>
             <option value="720">720p</option>
             <option value="480">480p</option>
-            <option value="max">Max</option>
           </select>
         </div>
         <div>
@@ -269,7 +258,8 @@
     });
 
     async function grab() {
-      const url = document.getElementById('url-input').value.trim();
+      const urlInput = document.getElementById('url-input');
+      const url = urlInput.value.trim();
       if (!url) return setStatus('// paste a link', 'error');
 
       const quality = document.getElementById('quality').value;
@@ -277,36 +267,36 @@
       const btn = document.getElementById('grab-btn');
 
       btn.disabled = true;
-      setStatus('<span class="spinner"></span> Processing...', 'loading');
+      setStatus('<span class="spinner"></span> Bypassing restrictions...', 'loading');
       document.getElementById('result').style.display = 'none';
-
-      // MINIMAL BODY - Prevents "invalid_body" errors
-      const body = { 
-        url: url,
-        videoQuality: quality,
-        isAudioOnly: isAudio
-      };
 
       try {
         const res = await fetch('https://cobalt-latest-cxzf.onrender.com/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(body)
+          headers: { 
+            'Accept': 'application/json',
+            'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({ 
+            url: url,
+            videoQuality: quality,
+            isAudioOnly: isAudio,
+            downloadMode: 'tunnel' //
+          })
         });
 
         const data = await res.json();
 
         if (data.status === 'error') {
-          setStatus('// error: ' + (data.text || 'engine error'), 'error');
+          setStatus('// ' + (data.text || 'engine error'), 'error'); //
         } else if (data.url) {
           setStatus('// success', 'success');
           showResult(data.url, data.filename || 'download');
         } else if (data.status === 'picker') {
-          setStatus('// multiple files found', 'success');
           showPicker(data.picker);
         }
       } catch (err) {
-        setStatus('// engine waking up... try again in 10s', 'error');
+        setStatus('// engine waking up... try again in 10s', 'error'); //
       } finally {
         btn.disabled = false;
       }
