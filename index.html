@@ -332,7 +332,6 @@
 </head>
 <body>
   <div class="page">
-
     <header>
       <div class="logo">GRABR</div>
       <div class="tagline">Paste any video link — get the file</div>
@@ -390,7 +389,6 @@
       Powered by <a href="https://github.com/imputnet/cobalt" target="_blank">cobalt engine</a> &nbsp;·&nbsp;
       No data stored &nbsp;·&nbsp; No tracking
     </footer>
-
   </div>
 
   <script>
@@ -444,14 +442,14 @@
       
       setStatus('<span class="spinner"></span> Waking up engine... (can take 30s on first run)', 'loading');
 
-      // Construct clean body
       const body = { url };
 
+      // Logic refined to prevent structural conflicts (fixes invalid_body error)
       if (audioOnly) {
         body.downloadMode = 'audio';
         body.audioFormat  = formatVal;
       } else {
-        body.downloadMode = 'tunnel'; // Default to tunnel for video to bypass 403s
+        body.downloadMode = 'tunnel'; // Forces engine-side fetching for all video types
         if (quality !== 'max') body.videoQuality = quality;
         if (formatVal !== 'auto') body.videoFormat = formatVal;
       }
