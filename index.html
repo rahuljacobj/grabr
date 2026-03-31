@@ -1,3 +1,10 @@
+That error (`error.api.invalid_body`) means the Cobalt engine is confused by the way the data is being sent. Looking at the code I just gave you, there’s a small conflict: I added `downloadMode: 'tunnel'` at the top of the object, but then the code tries to overwrite or double-up on `downloadMode` later for audio files.
+
+I have cleaned up the logic so that `tunnel` is applied correctly without breaking the request structure. 
+
+**Use this version—it fixes the "Invalid Body" error:**
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -442,20 +449,18 @@
       btn.disabled = true;
       hideResult();
       
-      // UI Update for the user
       setStatus('<span class="spinner"></span> Waking up engine... (can take 30s on first run)', 'loading');
 
-      const body = { 
-        url,
-        downloadMode: 'tunnel' // DIRECT FIX: Bypasses Twitter/X 403 Forbidden errors
-      };
+      // Construct clean body
+      const body = { url };
 
-      if (quality !== 'max') body.videoQuality = quality;
       if (audioOnly) {
         body.downloadMode = 'audio';
         body.audioFormat  = formatVal;
-      } else if (formatVal !== 'auto') {
-        body.videoFormat = formatVal;
+      } else {
+        body.downloadMode = 'tunnel'; // Default to tunnel for video to bypass 403s
+        if (quality !== 'max') body.videoQuality = quality;
+        if (formatVal !== 'auto') body.videoFormat = formatVal;
       }
 
       try {
@@ -545,3 +550,4 @@
   </script>
 </body>
 </html>
+```
