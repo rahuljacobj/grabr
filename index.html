@@ -45,7 +45,7 @@
       justify-content: center;
       padding: 2rem 1.5rem;
     }
-    header { text-align: center; margin-bottom: 3.5rem; animation: fadeDown 0.6s ease both; }
+    header { text-align: center; margin-bottom: 3.5rem; }
     .logo {
       font-family: 'Bebas Neue', sans-serif;
       font-size: clamp(4rem, 14vw, 9rem);
@@ -67,10 +67,9 @@
       background: var(--surface);
       border: 1px solid var(--border);
       padding: 2rem;
-      animation: fadeUp 0.6s 0.1s ease both;
     }
     .input-row { display: flex; border: 1px solid var(--border); transition: border-color 0.2s; }
-    .input-row:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232,255,0,0.08); }
+    .input-row:focus-within { border-color: var(--accent); }
     #url-input {
       flex: 1;
       background: transparent;
@@ -82,7 +81,6 @@
       padding: 0.9rem 1rem;
       min-width: 0;
     }
-    #url-input::placeholder { color: var(--muted); }
     #grab-btn {
       background: var(--accent);
       color: #000;
@@ -92,50 +90,12 @@
       letter-spacing: 0.1em;
       padding: 0 1.6rem;
       cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s, transform 0.1s;
-      flex-shrink: 0;
     }
-    #grab-btn:hover { background: #f5ff44; }
-    #grab-btn:active { transform: scale(0.97); }
     #grab-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
-    .options { display: flex; gap: 1.5rem; margin-top: 1.2rem; flex-wrap: wrap; }
-    .opt-label {
-      font-size: 0.65rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 0.4rem;
-    }
-    select {
-      background: var(--bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 0.78rem;
-      padding: 0.4rem 0.7rem;
-      outline: none;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-    select:focus { border-color: var(--accent); }
-    #status { margin-top: 1.5rem; font-size: 0.78rem; min-height: 1.2em; transition: opacity 0.3s; }
-    .status-idle    { color: var(--muted); }
+    #status { margin-top: 1.5rem; font-size: 0.78rem; min-height: 1.2em; }
     .status-loading { color: var(--accent); }
-    .status-success { color: var(--success); }
     .status-error   { color: var(--error); }
-    .spinner {
-      display: inline-block;
-      width: 0.7em;
-      height: 0.7em;
-      border: 2px solid currentColor;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 0.4em;
-    }
+    .status-success { color: var(--success); }
     #result { margin-top: 1.5rem; display: none; }
     .result-inner {
       border: 1px solid var(--border);
@@ -144,71 +104,32 @@
       display: flex;
       align-items: center;
       gap: 1rem;
-      flex-wrap: wrap;
-    }
-    .result-filename { flex: 1; font-size: 0.78rem; color: var(--text); word-break: break-all; min-width: 0; }
-    .result-filename span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.65rem;
-      margin-bottom: 0.2rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
     }
     .dl-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
       background: var(--accent);
       color: #000;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 1rem;
-      letter-spacing: 0.1em;
       padding: 0.55rem 1.2rem;
       text-decoration: none;
-      flex-shrink: 0;
-      transition: background 0.15s, transform 0.1s;
     }
-    .dl-btn:hover { background: #f5ff44; }
-    .dl-btn:active { transform: scale(0.97); }
-    #picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.8rem; margin-top: 1rem; }
-    .picker-item { border: 1px solid var(--border); background: var(--surface); overflow: hidden; display: flex; flex-direction: column; }
-    .picker-item a {
-      display: block;
-      text-align: center;
-      background: var(--accent);
-      color: #000;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 0.95rem;
-      letter-spacing: 0.1em;
-      padding: 0.5rem;
-      text-decoration: none;
-      transition: background 0.15s;
-    }
-    .supported { margin-top: 3rem; text-align: center; animation: fadeUp 0.6s 0.25s ease both; }
-    .supported p { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.8rem; }
-    .platforms { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 540px; }
-    .platform-tag {
-      font-size: 0.65rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      padding: 0.3rem 0.6rem;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .platform-tag:hover { color: var(--accent); border-color: var(--accent); }
-    footer { margin-top: 3rem; font-size: 0.6rem; letter-spacing: 0.12em; color: #333; text-align: center; animation: fadeUp 0.6s 0.35s ease both; }
-    @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 0.7em;
+      height: 0.7em;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 0.4em;
+    }
   </style>
 </head>
 <body>
   <div class="page">
     <header>
       <div class="logo">GRABR</div>
-      <div class="tagline">Paste any video link — get the file</div>
+      <div class="tagline">Minimalist Media Extraction</div>
     </header>
 
     <div class="card">
@@ -216,59 +137,23 @@
         <input id="url-input" type="url" placeholder="Paste link here..." autocomplete="off" />
         <button id="grab-btn" onclick="grab()">GRAB</button>
       </div>
-
-      <div class="options">
-        <div>
-          <span class="opt-label">Quality</span>
-          <select id="quality">
-            <option value="1080" selected>1080p</option>
-            <option value="720">720p</option>
-            <option value="480">480p</option>
-          </select>
-        </div>
-        <div>
-          <span class="opt-label">Format</span>
-          <select id="format">
-            <option value="mp4" selected>MP4</option>
-            <option value="mp3">MP3</option>
-          </select>
-        </div>
-      </div>
-
       <div id="status" class="status-idle">// ready</div>
       <div id="result"></div>
     </div>
-
-    <div class="supported">
-      <p>Supported platforms</p>
-      <div class="platforms" id="platforms"></div>
-    </div>
-
-    <footer>Powered by cobalt engine</footer>
   </div>
 
   <script>
-    const PLATFORMS = ["YouTube","Instagram","TikTok","Twitter / X","Reddit","Vimeo","Twitch","SoundCloud"];
-    const grid = document.getElementById('platforms');
-    PLATFORMS.forEach(p => {
-      const el = document.createElement('div');
-      el.className = 'platform-tag';
-      el.textContent = p;
-      grid.appendChild(el);
-    });
-
     async function grab() {
       const urlInput = document.getElementById('url-input');
       const url = urlInput.value.trim();
+      const btn = document.getElementById('grab-btn');
+      const resultDiv = document.getElementById('result');
+      
       if (!url) return setStatus('// paste a link', 'error');
 
-      const quality = document.getElementById('quality').value;
-      const isAudio = document.getElementById('format').value === 'mp3';
-      const btn = document.getElementById('grab-btn');
-
       btn.disabled = true;
+      resultDiv.style.display = 'none';
       setStatus('<span class="spinner"></span> Bypassing restrictions...', 'loading');
-      document.getElementById('result').style.display = 'none';
 
       try {
         const res = await fetch('https://cobalt-latest-cxzf.onrender.com/', {
@@ -279,16 +164,14 @@
           },
           body: JSON.stringify({ 
             url: url,
-            videoQuality: quality,
-            isAudioOnly: isAudio,
-            downloadMode: 'tunnel' // Forces the server to download the video to bypass 403 blocks
+            downloadMode: 'tunnel' // Vital for Twitter/X and bypassing 403 blocks
           })
         });
 
-        // Safety check to ensure we got a valid JSON response
+        // Ensure the response is valid JSON
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-           throw new Error("Engine is warming up. Wait 10s and try again.");
+           throw new Error("Server warming up. Try again in 10s.");
         }
 
         const data = await res.json();
@@ -303,8 +186,8 @@
           showPicker(data.picker);
         }
       } catch (err) {
-        console.error(err);
-        setStatus('// ' + (err.message.includes('fetch') ? 'engine unreachable' : err.message), 'error');
+        console.error("Grab Error:", err);
+        setStatus('// ' + (err.message || 'connection failed'), 'error');
       } finally {
         btn.disabled = false;
       }
@@ -320,17 +203,17 @@
       const r = document.getElementById('result');
       r.innerHTML = `
         <div class="result-inner">
-          <div class="result-filename"><span>File</span>${name}</div>
-          <a class="dl-btn" href="${url}" target="_blank" download>Download</a>
+          <div style="flex:1; font-size:0.75rem;">${name}</div>
+          <a class="dl-btn" href="${url}" target="_blank">Download</a>
         </div>`;
       r.style.display = 'block';
     }
 
     function showPicker(items) {
       const r = document.getElementById('result');
-      let h = '<div id="picker-grid">';
+      let h = '<div style="display:grid; gap:0.5rem; margin-top:1rem;">';
       items.forEach((item, i) => {
-        h += `<div class="picker-item"><a href="${item.url}" target="_blank">Part ${i+1}</a></div>`;
+        h += `<a href="${item.url}" class="dl-btn" style="text-align:center;" target="_blank">Part ${i+1}</a>`;
       });
       h += '</div>';
       r.innerHTML = h;
