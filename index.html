@@ -281,22 +281,30 @@
             url: url,
             videoQuality: quality,
             isAudioOnly: isAudio,
-            downloadMode: 'tunnel' //
+            downloadMode: 'tunnel' // Forces the server to download the video to bypass 403 blocks
           })
         });
+
+        // Safety check to ensure we got a valid JSON response
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+           throw new Error("Engine is warming up. Wait 10s and try again.");
+        }
 
         const data = await res.json();
 
         if (data.status === 'error') {
-          setStatus('// ' + (data.text || 'engine error'), 'error'); //
+          setStatus('// ' + (data.text || 'engine error'), 'error');
         } else if (data.url) {
           setStatus('// success', 'success');
           showResult(data.url, data.filename || 'download');
         } else if (data.status === 'picker') {
+          setStatus('// multiple items found', 'success');
           showPicker(data.picker);
         }
       } catch (err) {
-        setStatus('// engine waking up... try again in 10s', 'error'); //
+        console.error(err);
+        setStatus('// ' + (err.message.includes('fetch') ? 'engine unreachable' : err.message), 'error');
       } finally {
         btn.disabled = false;
       }
@@ -313,7 +321,7 @@
       r.innerHTML = `
         <div class="result-inner">
           <div class="result-filename"><span>File</span>${name}</div>
-          <a class="dl-btn" href="${url}" target="_blank">Download</a>
+          <a class="dl-btn" href="${url}" target="_blank" download>Download</a>
         </div>`;
       r.style.display = 'block';
     }
@@ -322,7 +330,7 @@
       const r = document.getElementById('result');
       let h = '<div id="picker-grid">';
       items.forEach((item, i) => {
-        h += `<div class="picker-item"><a href="${item.url}" target="_blank">Download Part ${i+1}</a></div>`;
+        h += `<div class="picker-item"><a href="${item.url}" target="_blank">Part ${i+1}</a></div>`;
       });
       h += '</div>';
       r.innerHTML = h;
