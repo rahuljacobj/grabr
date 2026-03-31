@@ -441,9 +441,15 @@
       const btn = document.getElementById('grab-btn');
       btn.disabled = true;
       hideResult();
-      setStatus('<span class="spinner"></span> connecting to engine...', 'loading');
+      
+      // UI Update for the user
+      setStatus('<span class="spinner"></span> Waking up engine... (can take 30s on first run)', 'loading');
 
-      const body = { url };
+      const body = { 
+        url,
+        downloadMode: 'tunnel' // DIRECT FIX: Bypasses Twitter/X 403 Forbidden errors
+      };
+
       if (quality !== 'max') body.videoQuality = quality;
       if (audioOnly) {
         body.downloadMode = 'audio';
@@ -453,7 +459,6 @@
       }
 
       try {
-        // Updated to your personal Render instance
         const res = await fetch('https://cobalt-latest-cxzf.onrender.com/', {
           method: 'POST',
           headers: {
@@ -481,8 +486,7 @@
         }
 
       } catch (err) {
-        // Since Render free tier sleeps, give a more helpful error
-        setStatus(`// engine is waking up or network error. please wait 30s and try again.`, 'error');
+        setStatus(`// engine is waking up or network error. wait 10s and try again.`, 'error');
         console.error(err);
       } finally {
         btn.disabled = false;
