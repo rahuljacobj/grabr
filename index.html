@@ -1,10 +1,3 @@
-That error (`error.api.invalid_body`) means the Cobalt engine is confused by the way the data is being sent. Looking at the code I just gave you, there’s a small conflict: I added `downloadMode: 'tunnel'` at the top of the object, but then the code tries to overwrite or double-up on `downloadMode` later for audio files.
-
-I have cleaned up the logic so that `tunnel` is applied correctly without breaking the request structure. 
-
-**Use this version—it fixes the "Invalid Body" error:**
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -550,4 +543,3 @@ I have cleaned up the logic so that `tunnel` is applied correctly without breaki
   </script>
 </body>
 </html>
-```
