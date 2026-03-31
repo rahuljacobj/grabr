@@ -387,7 +387,7 @@
     </div>
 
     <footer>
-      Powered by <a href="https://cobalt.tools" target="_blank">cobalt.tools</a> &nbsp;·&nbsp;
+      Powered by <a href="https://github.com/imputnet/cobalt" target="_blank">cobalt engine</a> &nbsp;·&nbsp;
       No data stored &nbsp;·&nbsp; No tracking
     </footer>
 
@@ -434,14 +434,14 @@
         return;
       }
 
-      const quality   = document.getElementById('quality').value;
+      const quality    = document.getElementById('quality').value;
       const formatVal = document.getElementById('format').value;
       const audioOnly = ['mp3','ogg','wav','opus'].includes(formatVal);
 
       const btn = document.getElementById('grab-btn');
       btn.disabled = true;
       hideResult();
-      setStatus('<span class="spinner"></span> fetching...', 'loading');
+      setStatus('<span class="spinner"></span> connecting to engine...', 'loading');
 
       const body = { url };
       if (quality !== 'max') body.videoQuality = quality;
@@ -453,7 +453,8 @@
       }
 
       try {
-        const res = await fetch('https://api.cobalt.tools/', {
+        // Updated to your personal Render instance
+        const res = await fetch('https://cobalt-latest-cxzf.onrender.com/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -465,7 +466,7 @@
         const data = await res.json();
 
         if (!res.ok || data.status === 'error') {
-          const msg = data?.error?.code || data?.text || 'Unknown error from cobalt API';
+          const msg = data?.error?.code || data?.text || 'Unknown engine error';
           setStatus(`// error: ${msg}`, 'error');
           btn.disabled = false;
           return;
@@ -480,7 +481,9 @@
         }
 
       } catch (err) {
-        setStatus(`// network error — ${err.message}`, 'error');
+        // Since Render free tier sleeps, give a more helpful error
+        setStatus(`// engine is waking up or network error. please wait 30s and try again.`, 'error');
+        console.error(err);
       } finally {
         btn.disabled = false;
       }
