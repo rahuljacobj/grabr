@@ -5,602 +5,539 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GRABR — Video Downloader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0c0c0c;
-      --surface: #131313;
-      --border: #242424;
-      --accent: #d4ff00;
-      --text: #efefef;
-      --muted: #4a4a4a;
-      --muted-lt: #666;
-      --red: #ff4f4f;
-      --orange: #ff9900;
-      --mono: 'Space Mono', monospace;
-      --display: 'Syne', sans-serif;
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: #222222;
+      --accent: #e8ff00;
+      --accent-dim: rgba(232, 255, 0, 0.08);
+      --text: #f0f0f0;
+      --muted: #555;
+      --error: #ff4545;
+      --success: #00e87a;
     }
 
-    html, body { height: 100%; }
-
-    body {
+    html, body {
+      height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: var(--mono);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 3rem 1.5rem 4rem;
-      position: relative;
+      font-family: 'IBM Plex Mono', monospace;
+      overflow-x: hidden;
     }
 
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image:
-        linear-gradient(rgba(212,255,0,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(212,255,0,0.025) 1px, transparent 1px);
-      background-size: 48px 48px;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
       pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
     }
 
-    .wrap {
-      width: 100%;
-      max-width: 660px;
+    .page {
       position: relative;
       z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      animation: fadeDown 0.6s ease both;
     }
 
     .logo {
-      font-family: var(--display);
-      font-size: clamp(4rem, 16vw, 7rem);
-      font-weight: 800;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(4rem, 14vw, 9rem);
+      letter-spacing: 0.05em;
+      line-height: 1;
       color: var(--accent);
-      letter-spacing: -0.04em;
-      line-height: 0.9;
-      text-transform: uppercase;
+      text-shadow: 0 0 60px rgba(232,255,0,0.25);
     }
 
     .tagline {
-      font-size: 0.65rem;
-      color: var(--muted-lt);
-      letter-spacing: 0.22em;
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
-      margin-top: 0.6rem;
-      margin-bottom: 2.8rem;
-    }
-
-    .config-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.6rem;
-    }
-
-    .config-label {
-      font-size: 0.6rem;
       color: var(--muted);
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      white-space: nowrap;
+      margin-top: 0.4rem;
     }
 
-    .config-input {
-      flex: 1;
-      background: transparent;
+    .card {
+      width: 100%;
+      max-width: 640px;
+      background: var(--surface);
       border: 1px solid var(--border);
-      outline: none;
-      padding: 0.4rem 0.7rem;
-      font-family: var(--mono);
-      font-size: 0.68rem;
-      color: var(--muted-lt);
-      transition: border-color 0.2s;
+      padding: 2rem;
+      animation: fadeUp 0.6s 0.1s ease both;
     }
-    .config-input:focus { border-color: var(--muted-lt); color: var(--text); }
-    .config-input::placeholder { color: var(--muted); }
 
-    .url-row {
+    .input-row {
       display: flex;
       border: 1px solid var(--border);
-      background: var(--surface);
       transition: border-color 0.2s;
     }
-    .url-row:focus-within { border-color: var(--accent); }
+
+    .input-row:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232,255,0,0.08);
+    }
 
     #url-input {
       flex: 1;
       background: transparent;
       border: none;
       outline: none;
-      padding: 1rem 1.25rem;
-      font-family: var(--mono);
-      font-size: 0.85rem;
       color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      padding: 0.9rem 1rem;
       min-width: 0;
     }
+
     #url-input::placeholder { color: var(--muted); }
 
     #grab-btn {
       background: var(--accent);
       color: #000;
       border: none;
-      padding: 1rem 1.6rem;
-      font-family: var(--display);
-      font-size: 0.85rem;
-      font-weight: 800;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
       letter-spacing: 0.1em;
-      text-transform: uppercase;
+      padding: 0 1.6rem;
       cursor: pointer;
+      white-space: nowrap;
       transition: background 0.15s, transform 0.1s;
       flex-shrink: 0;
     }
-    #grab-btn:hover { background: #e8ff33; }
+
+    #grab-btn:hover { background: #f5ff44; }
     #grab-btn:active { transform: scale(0.97); }
-    #grab-btn:disabled { background: var(--muted); cursor: not-allowed; color: #888; }
+    #grab-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
 
-    .opts { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; align-items: center; }
+    .options {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.2rem;
+      flex-wrap: wrap;
+    }
 
-    .opt-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted-lt);
-      padding: 0.35rem 0.8rem;
-      font-family: var(--mono);
+    .opt-label {
       font-size: 0.65rem;
-      cursor: pointer;
-      letter-spacing: 0.06em;
-      transition: all 0.15s;
-    }
-    .opt-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .opt-btn.active { border-color: var(--accent); color: #000; background: var(--accent); }
-
-    .sep { width: 1px; height: 20px; background: var(--border); margin: 0 0.15rem; }
-
-    #status { margin-top: 1.8rem; }
-
-    .loading {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.7rem;
-      color: var(--muted-lt);
-      letter-spacing: 0.12em;
-    }
-
-    .spinner {
-      width: 13px; height: 13px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.65s linear infinite;
-      flex-shrink: 0;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .card {
-      border: 1px solid var(--border);
-      background: var(--surface);
-      animation: fadeUp 0.25s ease;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid var(--border);
-      gap: 0.5rem;
-    }
-
-    .card-tag {
-      font-size: 0.6rem;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      flex: 1;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 0.4rem;
     }
-    .card-tag.ok   { color: var(--accent); }
-    .card-tag.err  { color: var(--red); }
 
-    .card-body { padding: 1rem; }
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.7rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
 
-    .dl-name {
+    select:focus { border-color: var(--accent); }
+
+    #status {
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      min-height: 1.2em;
+      transition: opacity 0.3s;
+    }
+
+    .status-idle    { color: var(--muted); }
+    .status-loading { color: var(--accent); }
+    .status-success { color: var(--success); }
+    .status-error   { color: var(--error); }
+
+    .spinner {
+      display: inline-block;
+      width: 0.7em;
+      height: 0.7em;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.4em;
+    }
+
+    #result { margin-top: 1.5rem; display: none; }
+    #result.visible { display: block; }
+
+    .result-inner {
+      border: 1px solid var(--border);
+      background: var(--accent-dim);
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .result-filename {
+      flex: 1;
       font-size: 0.78rem;
       color: var(--text);
       word-break: break-all;
-      line-height: 1.5;
-      margin-bottom: 1rem;
+      min-width: 0;
+    }
+
+    .result-filename span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.65rem;
+      margin-bottom: 0.2rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
     .dl-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.5rem;
       background: var(--accent);
       color: #000;
-      text-decoration: none;
-      padding: 0.65rem 1.2rem;
-      font-family: var(--display);
-      font-size: 0.75rem;
-      font-weight: 800;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
       letter-spacing: 0.1em;
-      text-transform: uppercase;
-      transition: background 0.15s;
-      border: none;
-      cursor: pointer;
-    }
-    .dl-btn:hover { background: #e8ff33; }
-
-    .picker-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.65rem 0.9rem;
-      border: 1px solid var(--border);
-      margin-bottom: 0.4rem;
-      background: rgba(255,255,255,0.02);
-    }
-
-    .picker-meta { flex: 1; min-width: 0; }
-    .picker-title { font-size: 0.72rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .picker-sub { font-size: 0.6rem; color: var(--muted-lt); margin-top: 0.2rem; }
-
-    .picker-btn {
-      background: transparent;
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      padding: 0.3rem 0.7rem;
-      font-family: var(--mono);
-      font-size: 0.65rem;
-      cursor: pointer;
+      padding: 0.55rem 1.2rem;
       text-decoration: none;
       flex-shrink: 0;
-      transition: all 0.15s;
-      display: inline-block;
-    }
-    .picker-btn:hover { background: var(--accent); color: #000; }
-
-    .err-msg {
-      font-size: 0.78rem;
-      color: var(--red);
-      line-height: 1.7;
+      transition: background 0.15s, transform 0.1s;
     }
 
-    .debug-toggle {
-      font-size: 0.6rem;
-      color: var(--muted);
-      letter-spacing: 0.1em;
-      background: none;
-      border: none;
-      cursor: pointer;
-      text-transform: uppercase;
-      padding: 0;
-      transition: color 0.15s;
-      white-space: nowrap;
-    }
-    .debug-toggle:hover { color: var(--muted-lt); }
+    .dl-btn:hover { background: #f5ff44; }
+    .dl-btn:active { transform: scale(0.97); }
 
-    .debug-box {
-      margin-top: 0.75rem;
-      background: #080808;
-      border: 1px solid #1c1c1c;
-      padding: 0.75rem;
-      font-size: 0.6rem;
-      color: #5a5a5a;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 240px;
-      overflow-y: auto;
+    #picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.8rem;
+      margin-top: 1rem;
     }
-    .dg-step { color: #3a3a3a; }
-    .dg-key  { color: #666; }
-    .dg-val  { color: #8abf00; }
-    .dg-err  { color: var(--red); }
-    .dg-warn { color: var(--orange); }
 
-    .bottom {
-      margin-top: 3.5rem;
-      border-top: 1px solid var(--border);
-      padding-top: 1.25rem;
+    .picker-item {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
     }
 
-    .sites-label { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
-    .sites-list { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
-    .site-tag { font-size: 0.6rem; color: var(--muted); border: 1px solid var(--border); padding: 0.18rem 0.5rem; }
+    .picker-item img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+    }
 
-    footer { font-size: 0.6rem; color: #2e2e2e; letter-spacing: 0.1em; }
-    footer a { color: #3e3e3e; }
+    .picker-item a {
+      display: block;
+      text-align: center;
+      background: var(--accent);
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      padding: 0.5rem;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .picker-item a:hover { background: #f5ff44; }
+
+    .supported {
+      margin-top: 3rem;
+      text-align: center;
+      animation: fadeUp 0.6s 0.25s ease both;
+    }
+
+    .supported p {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.8rem;
+    }
+
+    .platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      max-width: 540px;
+    }
+
+    .platform-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.6rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .platform-tag:hover { color: var(--accent); border-color: var(--accent); }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: #333;
+      text-align: center;
+      animation: fadeUp 0.6s 0.35s ease both;
+    }
+
+    footer a { color: #444; text-decoration: none; }
+    footer a:hover { color: var(--muted); }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 480px) {
-      .url-row { flex-direction: column; }
-      #grab-btn { padding: 0.85rem; text-align: center; }
+      .card { padding: 1.4rem; }
+      .options { gap: 1rem; }
+      .input-row { flex-direction: column; }
+      #grab-btn { padding: 0.85rem; width: 100%; }
     }
   </style>
 </head>
 <body>
-<div class="wrap">
+  <div class="page">
 
-  <div class="logo">GRABR</div>
-  <p class="tagline">Minimalist Media Extraction</p>
+    <header>
+      <div class="logo">GRABR</div>
+      <div class="tagline">Paste any video link — get the file</div>
+    </header>
 
-  <div class="config-row">
-    <span class="config-label">Engine →</span>
-    <input class="config-input" id="engine-url" type="text"
-      value="https://api.cobalt.tools"
-      placeholder="https://your-cobalt.render.com"
-      spellcheck="false" />
-  </div>
-
-  <div class="url-row">
-    <input id="url-input" type="text" placeholder="paste video URL here..."
-      autocomplete="off" spellcheck="false" />
-    <button id="grab-btn" onclick="grab()">GRAB ↓</button>
-  </div>
-
-  <div class="opts">
-    <span class="config-label">Quality:</span>
-    <button class="opt-btn active" data-q="1080">1080p</button>
-    <button class="opt-btn" data-q="720">720p</button>
-    <button class="opt-btn" data-q="480">480p</button>
-    <button class="opt-btn" data-q="360">360p</button>
-    <button class="opt-btn" data-q="max">Max</button>
-    <div class="sep"></div>
-    <button class="opt-btn active" data-m="auto">Video</button>
-    <button class="opt-btn" data-m="audio">Audio only</button>
-    <button class="opt-btn" data-m="mute">Mute</button>
-  </div>
-
-  <div id="status"></div>
-
-  <div class="bottom">
-    <div>
-      <p class="sites-label">Supported platforms</p>
-      <div class="sites-list">
-        <span class="site-tag">YouTube</span>
-        <span class="site-tag">Instagram</span>
-        <span class="site-tag">Twitter/X</span>
-        <span class="site-tag">TikTok</span>
-        <span class="site-tag">Reddit</span>
-        <span class="site-tag">Facebook</span>
-        <span class="site-tag">Twitch</span>
-        <span class="site-tag">Vimeo</span>
-        <span class="site-tag">Dailymotion</span>
-        <span class="site-tag">SoundCloud</span>
-        <span class="site-tag">Pinterest</span>
-        <span class="site-tag">Snapchat</span>
-        <span class="site-tag">Tumblr</span>
-        <span class="site-tag">+ more</span>
+    <div class="card">
+      <div class="input-row">
+        <input
+          id="url-input"
+          type="url"
+          placeholder="https://youtube.com/watch?v=... or any video URL"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="grab-btn" onclick="grab()">GRAB</button>
       </div>
+
+      <div class="options">
+        <div>
+          <span class="opt-label">Quality</span>
+          <select id="quality">
+            <option value="max">Max</option>
+            <option value="2160">4K</option>
+            <option value="1440">1440p</option>
+            <option value="1080" selected>1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select>
+        </div>
+        <div>
+          <span class="opt-label">Format</span>
+          <select id="format">
+            <option value="auto">Auto (Video)</option>
+            <option value="mp4">MP4</option>
+            <option value="webm">WebM</option>
+            <option value="mp3">MP3 (Audio only)</option>
+            <option value="ogg">OGG (Audio only)</option>
+            <option value="wav">WAV (Audio only)</option>
+            <option value="opus">Opus (Audio only)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="status" class="status-idle">// ready</div>
+      <div id="result"></div>
     </div>
-    <footer>Powered by <a href="https://cobalt.tools" target="_blank">cobalt.tools</a> — for personal use only</footer>
+
+    <div class="supported">
+      <p>Supported platforms include</p>
+      <div class="platforms" id="platforms"></div>
+    </div>
+
+    <footer>
+      Powered by <a href="https://github.com/imputnet/cobalt" target="_blank">cobalt engine</a> &nbsp;·&nbsp;
+      No data stored &nbsp;·&nbsp; No tracking
+    </footer>
+
   </div>
 
-</div>
-<script>
-let selectedQuality = '1080';
-let selectedMode    = 'auto';
-let debugLog        = [];
+  <script>
+    const PLATFORMS = [
+      "YouTube","Instagram","TikTok","Twitter / X","Reddit","Vimeo",
+      "Twitch","SoundCloud","Bilibili","Pinterest","Facebook",
+      "Dailymotion","Tumblr","VK","OK.ru","Streamable","Coub","Loom","& more"
+    ];
 
-document.querySelectorAll('[data-q]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-q]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedQuality = btn.dataset.q;
-  });
-});
-document.querySelectorAll('[data-m]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-m]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedMode = btn.dataset.m;
-  });
-});
-document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') grab(); });
-document.getElementById('url-input').addEventListener('paste', () => {
-  setTimeout(() => { const v = document.getElementById('url-input').value.trim(); if (v.startsWith('http')) grab(); }, 80);
-});
-
-function log(step, key, val, level = 'info') {
-  debugLog.push({ step, key, val, level });
-}
-
-function renderDebug() {
-  return debugLog.map(e => {
-    const cls = e.level === 'error' ? 'dg-err' : e.level === 'warn' ? 'dg-warn' : 'dg-key';
-    const valStr = typeof e.val === 'object' ? JSON.stringify(e.val, null, 2) : String(e.val);
-    return `<span class="${cls}">[${e.step}]</span> <span class="dg-key">${e.key}:</span> <span class="dg-val">${valStr}</span>`;
-  }).join('\n');
-}
-
-function debugSection() {
-  return `<button class="debug-toggle" onclick="toggleDebug(this)">▸ debug log (${debugLog.length})</button>
-          <div class="debug-box" style="display:none">${renderDebug()}</div>`;
-}
-
-function toggleDebug(btn) {
-  const box = btn.nextElementSibling;
-  const show = box.style.display === 'none';
-  box.style.display = show ? 'block' : 'none';
-  btn.textContent = (show ? '▾ hide' : '▸ show') + ` debug log (${debugLog.length})`;
-}
-
-function setStatus(html) { document.getElementById('status').innerHTML = html; }
-
-function engineUrl() {
-  return (document.getElementById('engine-url').value || 'https://api.cobalt.tools').trim().replace(/\/$/, '');
-}
-
-function dlMode(m) {
-  return m === 'audio' ? 'audio' : m === 'mute' ? 'muteVideo' : 'auto';
-}
-
-function guessFilename(url, mode) {
-  try {
-    const p = new URL(url).pathname.split('/').filter(Boolean);
-    const id = p[p.length - 1] || 'video';
-    return id + (mode === 'audio' ? '.mp3' : '.mp4');
-  } catch { return mode === 'audio' ? 'audio.mp3' : 'video.mp4'; }
-}
-
-function showError(html) {
-  setStatus(`<div class="card">
-    <div class="card-head"><span class="card-tag err">✗ ERROR</span>${debugSection()}</div>
-    <div class="card-body"><p class="err-msg">${html}</p></div>
-  </div>`);
-}
-
-async function grab() {
-  const rawUrl = document.getElementById('url-input').value.trim();
-  if (!rawUrl) return;
-
-  debugLog = [];
-  const btn = document.getElementById('grab-btn');
-  btn.disabled = true;
-  setStatus(`<div class="loading"><div class="spinner"></div><span>CONTACTING ENGINE...</span></div>`);
-
-  const engine = engineUrl();
-  const body = {
-    url:           rawUrl,
-    downloadMode:  dlMode(selectedMode),
-    filenameStyle: 'pretty',
-    youtubeHLS:    false,
-  };
-  if (selectedQuality !== 'max') body.videoQuality = selectedQuality;
-
-  log('config', 'engine', engine);
-  log('config', 'url', rawUrl);
-  log('config', 'body', body);
-
-  let res, data;
-  try {
-    res = await fetch(engine + '/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(body),
+    const grid = document.getElementById('platforms');
+    PLATFORMS.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'platform-tag';
+      el.textContent = p;
+      grid.appendChild(el);
     });
 
-    log('http', 'status', res.status);
-    log('http', 'ok', res.ok);
+    document.getElementById('url-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') grab();
+    });
 
-    const raw = await res.text();
-    log('http', 'rawBody (truncated)', raw.slice(0, 500));
-
-    try {
-      data = JSON.parse(raw);
-      log('parse', 'cobaltStatus', data.status);
-      log('parse', 'fullData', data);
-    } catch (e) {
-      log('parse', 'FAILED', e.message, 'error');
-      log('parse', 'hint', 'Engine returned non-JSON. Check CORS_WILDCARD=1 and engine URL.', 'warn');
-      showError(`Engine returned non-JSON (HTTP ${res.status}).<br>
-        <small style="color:var(--orange)">→ Verify: engine URL is correct · CORS_WILDCARD=1 is set · engine is running</small>`);
-      return;
-    }
-  } catch (e) {
-    log('network', 'error', e.message, 'error');
-    log('network', 'hint', 'CORS block or engine unreachable', 'warn');
-    showError(`Cannot reach engine.<br><small>${e.message}</small><br>
-      <small style="color:var(--orange)">→ Check engine URL · Set CORS_WILDCARD=1 (not CORS_WILD_CARD)</small>`);
-    btn.disabled = false;
-    return;
-  } finally {
-    btn.disabled = false;
-  }
-
-  // ── Error from cobalt ──────────────────────────────────────────────────────
-  if (!res.ok || data?.status === 'error') {
-    const code = data?.error?.code || data?.error || 'unknown';
-    const ctx  = data?.error?.context || {};
-    log('cobalt', 'errorCode', code, 'error');
-    log('cobalt', 'context',   ctx,  'error');
-
-    const hints = {
-      'fetch.fail':           'Engine IP is blocked by the platform. Deploy on Fly.io or add a residential proxy (Webshare.io).',
-      'content.unavailable':  'Content is private, geo-locked, or deleted.',
-      'content.too_long':     'Video exceeds the engine\'s duration limit.',
-      'api.rate_limit':       'Rate limited — wait a moment then retry.',
-      'link.unsupported':     'This URL format is not supported.',
-    };
-    const hint = Object.entries(hints).find(([k]) => String(code).includes(k))?.[1]
-      || 'Likely an IP block on Render. Try Fly.io or add HTTPS_PROXY env var with a residential proxy.';
-
-    showError(`<b>${code}</b>${Object.keys(ctx).length ? `<br><small style="color:var(--muted-lt)">${JSON.stringify(ctx)}</small>` : ''}<br>
-      <small style="color:var(--orange);margin-top:.4rem;display:block">→ ${hint}</small>`);
-    return;
-  }
-
-  // ── Tunnel / Redirect ──────────────────────────────────────────────────────
-  if (data.status === 'tunnel' || data.status === 'redirect') {
-    const filename = data.filename || guessFilename(rawUrl, selectedMode);
-    log('result', 'type', data.status);
-    log('result', 'filename', filename);
-
-    setStatus(`<div class="card">
-      <div class="card-head"><span class="card-tag ok">✓ READY — ${data.status.toUpperCase()}</span>${debugSection()}</div>
-      <div class="card-body">
-        <p class="dl-name">${filename}</p>
-        <a class="dl-btn" href="${data.url}" download="${filename}" target="_blank">↓ Download</a>
-      </div>
-    </div>`);
-    return;
-  }
-
-  // ── Picker ─────────────────────────────────────────────────────────────────
-  if (data.status === 'picker') {
-    const items = Array.isArray(data.picker) ? data.picker : [];
-    log('result', 'type', 'picker');
-    log('result', 'count', items.length);
-    log('result', 'items', items.map(i => ({ type: i.type, url: (i.url || '').slice(0, 80) })));
-
-    if (!items.length) {
-      showError('Picker returned 0 items — content may be unavailable or region-locked.');
-      return;
+    function setStatus(msg, type = 'idle') {
+      const el = document.getElementById('status');
+      el.className = `status-${type}`;
+      el.innerHTML = msg;
     }
 
-    const rows = items.map((item, i) => {
-      const type  = item.type || 'media';
-      const label = type === 'photo' ? `Photo ${i+1}` : type === 'gif' ? `GIF ${i+1}` : `Video ${i+1}`;
-      return `<div class="picker-item">
-        <div class="picker-meta">
-          <div class="picker-title">${label}</div>
-          <div class="picker-sub">${type}${item.thumb ? ' · thumbnail available' : ''}</div>
+    function hideResult() {
+      const r = document.getElementById('result');
+      r.className = '';
+      r.innerHTML = '';
+    }
+
+    async function grab() {
+      const urlInput = document.getElementById('url-input');
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        setStatus('// paste a video URL first', 'error');
+        urlInput.focus();
+        return;
+      }
+
+      const quality    = document.getElementById('quality').value;
+      const formatVal = document.getElementById('format').value;
+      const audioOnly = ['mp3','ogg','wav','opus'].includes(formatVal);
+
+      const btn = document.getElementById('grab-btn');
+      btn.disabled = true;
+      hideResult();
+      setStatus('<span class="spinner"></span> connecting to engine...', 'loading');
+
+      const body = { url };
+      if (quality !== 'max') body.videoQuality = quality;
+      if (audioOnly) {
+        body.downloadMode = 'audio';
+        body.audioFormat  = formatVal;
+      } else if (formatVal !== 'auto') {
+        body.videoFormat = formatVal;
+      }
+
+      try {
+        // Updated to your personal Render instance
+        const res = await fetch('https://cobalt-latest-cxzf.onrender.com/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || data.status === 'error') {
+          const msg = data?.error?.code || data?.text || 'Unknown engine error';
+          setStatus(`// error: ${msg}`, 'error');
+          btn.disabled = false;
+          return;
+        }
+
+        if (data.status === 'redirect' || data.status === 'tunnel') {
+          renderSingleResult(data);
+        } else if (data.status === 'picker') {
+          renderPicker(data);
+        } else {
+          setStatus(`// unexpected response: ${data.status}`, 'error');
+        }
+
+      } catch (err) {
+        // Since Render free tier sleeps, give a more helpful error
+        setStatus(`// engine is waking up or network error. please wait 30s and try again.`, 'error');
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderSingleResult(data) {
+      setStatus('// ready to download ↓', 'success');
+      const filename = data.filename || guessFilename(data.url);
+      const result = document.getElementById('result');
+      result.innerHTML = `
+        <div class="result-inner">
+          <div class="result-filename">
+            <span>File</span>
+            ${esc(filename)}
+          </div>
+          <a class="dl-btn" href="${esc(data.url)}" download="${esc(filename)}" target="_blank">
+            ↓ Download
+          </a>
         </div>
-        <a class="picker-btn" href="${item.url}" download target="_blank">↓ Save</a>
-      </div>`;
-    }).join('');
+      `;
+      result.className = 'visible';
+    }
 
-    const audioRow = data.audio ? `
-      <div class="picker-item" style="border-color:var(--muted);margin-top:.25rem">
-        <div class="picker-meta">
-          <div class="picker-title">Audio track</div>
-          <div class="picker-sub">audio</div>
-        </div>
-        <a class="picker-btn" href="${data.audio}" download target="_blank">↓ Save</a>
-      </div>` : '';
+    function renderPicker(data) {
+      setStatus(`// ${data.picker.length} items found — pick one to download`, 'success');
+      const result = document.getElementById('result');
+      let html = '<div id="picker-grid">';
+      data.picker.forEach((item, i) => {
+        const label = item.type === 'photo' ? `Photo ${i+1}` : `Video ${i+1}`;
+        const thumb = item.thumb ? `<img src="${esc(item.thumb)}" alt="${label}" loading="lazy" />` : '';
+        html += `
+          <div class="picker-item">
+            ${thumb}
+            <a href="${esc(item.url)}" download="${label}" target="_blank">↓ ${label}</a>
+          </div>
+        `;
+      });
+      html += '</div>';
+      result.innerHTML = html;
+      result.className = 'visible';
+    }
 
-    setStatus(`<div class="card">
-      <div class="card-head"><span class="card-tag ok">✓ ${items.length} FILE${items.length > 1 ? 'S' : ''} FOUND</span>${debugSection()}</div>
-      <div class="card-body">${rows}${audioRow}</div>
-    </div>`);
-    return;
-  }
+    function guessFilename(url) {
+      try {
+        const parts = new URL(url).pathname.split('/').filter(Boolean);
+        return parts[parts.length - 1] || 'video';
+      } catch { return 'video'; }
+    }
 
-  // ── Unknown ────────────────────────────────────────────────────────────────
-  log('result', 'unknownStatus', data.status, 'warn');
-  showError(`Unexpected response status: "${data.status}"`);
-}
-</script>
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+        .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
 </body>
 </html>
