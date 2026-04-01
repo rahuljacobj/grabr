@@ -625,18 +625,18 @@
     clearResult();
     setStatus('<span class="spinner"></span> contacting engine...', 'loading');
 
+    const isTwitter = /twitter\.com|x\.com|t\.co/.test(url);
     const body = { url };
     if (quality !== 'max') body.videoQuality = quality;
     if (audioOnly) {
       body.downloadMode = 'audio';
       body.audioFormat  = formatVal;
+    } else if (isTwitter) {
+      // Twitter/X CDN blocks direct browser requests — must tunnel through engine
+      body.downloadMode = 'tunnel';
     } else if (formatVal !== 'auto') {
       body.videoFormat = formatVal;
     }
-
-    // Twitter/X CDN blocks direct browser requests — force tunnel through engine
-    const isTwitter = /twitter\.com|x\.com|t\.co/.test(url);
-    if (isTwitter && !audioOnly) body.downloadMode = 'tunnel';
 
     let res, data;
 
