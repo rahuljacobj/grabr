@@ -434,13 +434,12 @@
       <div>
         <span class="opt-label">Format</span>
         <select id="format">
-          <option value="auto">Auto (Video)</option>
-          <option value="mp4">MP4</option>
-          <option value="webm">WebM</option>
-          <option value="mp3">MP3 (Audio only)</option>
-          <option value="ogg">OGG (Audio only)</option>
-          <option value="wav">WAV (Audio only)</option>
-          <option value="opus">Opus (Audio only)</option>
+          <option value="auto">Video (default)</option>
+          <option value="mute">Video (no audio)</option>
+          <option value="mp3">Audio — MP3</option>
+          <option value="ogg">Audio — OGG</option>
+          <option value="wav">Audio — WAV</option>
+          <option value="opus">Audio — Opus</option>
         </select>
       </div>
     </div>
@@ -630,13 +629,11 @@
     if (quality !== 'max') body.videoQuality = quality;
     if (audioOnly) {
       body.downloadMode = 'audio';
-      body.audioFormat  = formatVal;
-    } else if (isTwitter) {
-      // Twitter/X CDN blocks direct browser requests — must tunnel through engine
-      body.downloadMode = 'tunnel';
-    } else if (formatVal !== 'auto') {
-      body.videoFormat = formatVal;
+      if (formatVal !== 'mp3') body.audioFormat = formatVal;
+    } else if (formatVal === 'mute') {
+      body.downloadMode = 'mute';
     }
+    if (isTwitter) body.alwaysProxy = true;
 
     let res, data;
 
