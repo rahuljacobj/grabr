@@ -506,6 +506,14 @@
       title: 'Content unavailable',
       fix: `This content is private, deleted, or geo-restricted.`
     },
+    'error.api.content.video.unavailable': {
+      title: 'This video is unavailable',
+      fix: `YouTube is blocking this specific video — it may be:<br>
+        · <b>Region-locked</b> (not available in India)<br>
+        · <b>Age-restricted</b> and your cookies aren't passing auth<br>
+        · <b>Private or deleted</b> by the uploader<br><br>
+        Try a different video to confirm your engine is working correctly.`
+    },
     'error.api.content.too_long': {
       title: 'Video too long',
       fix: `The engine has a duration limit. Try a shorter clip, or self-host Cobalt with a higher limit.`
@@ -626,6 +634,10 @@
       body.videoFormat = formatVal;
     }
 
+    // Twitter/X CDN blocks direct browser requests — force tunnel through engine
+    const isTwitter = /twitter\.com|x\.com|t\.co/.test(url);
+    if (isTwitter && !audioOnly) body.downloadMode = 'tunnel';
+
     let res, data;
 
     try {
@@ -658,7 +670,10 @@
     // Cobalt-level error
     if (!res.ok || data.status === 'error') {
       const code   = data?.error?.code || '';
-      const rawMsg = data?.text || data?.error || 'Unknown engine error';
+      const errVal = data?.error;
+      const rawMsg = data?.text
+        || (typeof errVal === 'string' ? errVal : errVal?.code || JSON.stringify(errVal))
+        || 'Unknown engine error';
       showError(code, rawMsg);
       btn.disabled = false;
       return;
