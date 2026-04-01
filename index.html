@@ -18,6 +18,7 @@
       --text: #f0f0f0;
       --muted: #555;
       --error: #ff4545;
+      --warn: #ff9500;
       --success: #00e87a;
     }
 
@@ -123,7 +124,7 @@
 
     #grab-btn:hover { background: #f5ff44; }
     #grab-btn:active { transform: scale(0.97); }
-    #grab-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
+    #grab-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
     .options {
       display: flex;
@@ -155,17 +156,52 @@
 
     select:focus { border-color: var(--accent); }
 
+    /* ── Status ── */
     #status {
       margin-top: 1.5rem;
       font-size: 0.78rem;
       min-height: 1.2em;
-      transition: opacity 0.3s;
     }
 
     .status-idle    { color: var(--muted); }
     .status-loading { color: var(--accent); }
     .status-success { color: var(--success); }
     .status-error   { color: var(--error); }
+
+    /* Rich error box */
+    .err-box {
+      margin-top: 1rem;
+      border: 1px solid var(--error);
+      background: rgba(255,69,69,0.05);
+      padding: 0.9rem 1rem;
+      font-size: 0.75rem;
+      line-height: 1.7;
+      color: var(--error);
+      animation: fadeUp 0.2s ease both;
+    }
+
+    .err-box .err-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      color: var(--error);
+    }
+
+    .err-box .err-fix {
+      color: var(--warn);
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      line-height: 1.6;
+    }
+
+    .err-box .err-fix b { color: var(--text); }
+
+    .err-box a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .err-box a:hover { text-decoration: underline; }
 
     .spinner {
       display: inline-block;
@@ -179,6 +215,7 @@
       margin-right: 0.4em;
     }
 
+    /* ── Results ── */
     #result { margin-top: 1.5rem; display: none; }
     #result.visible { display: block; }
 
@@ -190,6 +227,7 @@
       align-items: center;
       gap: 1rem;
       flex-wrap: wrap;
+      animation: fadeUp 0.25s ease both;
     }
 
     .result-filename {
@@ -227,6 +265,7 @@
     .dl-btn:hover { background: #f5ff44; }
     .dl-btn:active { transform: scale(0.97); }
 
+    /* Picker grid */
     #picker-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -264,6 +303,37 @@
 
     .picker-item a:hover { background: #f5ff44; }
 
+    /* ── Debug log ── */
+    .debug-toggle {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 0.75rem;
+      display: block;
+      transition: color 0.15s;
+    }
+    .debug-toggle:hover { color: #888; }
+
+    .debug-box {
+      margin-top: 0.5rem;
+      background: #070707;
+      border: 1px solid #1a1a1a;
+      padding: 0.75rem;
+      font-size: 0.6rem;
+      color: #4a4a4a;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* ── Platforms ── */
     .supported {
       margin-top: 3rem;
       text-align: center;
@@ -314,12 +384,10 @@
       from { opacity: 0; transform: translateY(-20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     @media (max-width: 480px) {
@@ -331,213 +399,316 @@
   </style>
 </head>
 <body>
-  <div class="page">
+<div class="page">
 
-    <header>
-      <div class="logo">GRABR</div>
-      <div class="tagline">Paste any video link — get the file</div>
-    </header>
+  <header>
+    <div class="logo">GRABR</div>
+    <div class="tagline">Paste any video link — get the file</div>
+  </header>
 
-    <div class="card">
-      <div class="input-row">
-        <input
-          id="url-input"
-          type="url"
-          placeholder="https://youtube.com/watch?v=... or any video URL"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button id="grab-btn" onclick="grab()">GRAB</button>
-      </div>
-
-      <div class="options">
-        <div>
-          <span class="opt-label">Quality</span>
-          <select id="quality">
-            <option value="max">Max</option>
-            <option value="2160">4K</option>
-            <option value="1440">1440p</option>
-            <option value="1080" selected>1080p</option>
-            <option value="720">720p</option>
-            <option value="480">480p</option>
-            <option value="360">360p</option>
-          </select>
-        </div>
-        <div>
-          <span class="opt-label">Format</span>
-          <select id="format">
-            <option value="auto">Auto (Video)</option>
-            <option value="mp4">MP4</option>
-            <option value="webm">WebM</option>
-            <option value="mp3">MP3 (Audio only)</option>
-            <option value="ogg">OGG (Audio only)</option>
-            <option value="wav">WAV (Audio only)</option>
-            <option value="opus">Opus (Audio only)</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="status" class="status-idle">// ready</div>
-      <div id="result"></div>
+  <div class="card">
+    <div class="input-row">
+      <input
+        id="url-input"
+        type="url"
+        placeholder="https://youtube.com/watch?v=... or any video URL"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="grab-btn" onclick="grab()">GRAB</button>
     </div>
 
-    <div class="supported">
-      <p>Supported platforms include</p>
-      <div class="platforms" id="platforms"></div>
+    <div class="options">
+      <div>
+        <span class="opt-label">Quality</span>
+        <select id="quality">
+          <option value="max">Max</option>
+          <option value="2160">4K</option>
+          <option value="1440">1440p</option>
+          <option value="1080" selected>1080p</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+        </select>
+      </div>
+      <div>
+        <span class="opt-label">Format</span>
+        <select id="format">
+          <option value="auto">Auto (Video)</option>
+          <option value="mp4">MP4</option>
+          <option value="webm">WebM</option>
+          <option value="mp3">MP3 (Audio only)</option>
+          <option value="ogg">OGG (Audio only)</option>
+          <option value="wav">WAV (Audio only)</option>
+          <option value="opus">Opus (Audio only)</option>
+        </select>
+      </div>
     </div>
 
-    <footer>
-      Powered by <a href="https://github.com/imputnet/cobalt" target="_blank">cobalt engine</a> &nbsp;·&nbsp;
-      No data stored &nbsp;·&nbsp; No tracking
-    </footer>
-
+    <div id="status" class="status-idle">// ready</div>
+    <div id="error-detail"></div>
+    <div id="result"></div>
   </div>
 
-  <script>
-    const PLATFORMS = [
-      "YouTube","Instagram","TikTok","Twitter / X","Reddit","Vimeo",
-      "Twitch","SoundCloud","Bilibili","Pinterest","Facebook",
-      "Dailymotion","Tumblr","VK","OK.ru","Streamable","Coub","Loom","& more"
+  <div class="supported">
+    <p>Supported platforms include</p>
+    <div class="platforms" id="platforms"></div>
+  </div>
+
+  <footer>
+    Powered by <a href="https://github.com/imputnet/cobalt" target="_blank">cobalt engine</a>
+    &nbsp;·&nbsp; No data stored &nbsp;·&nbsp; No tracking
+  </footer>
+
+</div>
+
+<script>
+  // ─── Config ────────────────────────────────────────────────────────────────
+  const ENGINE = 'https://cobalt-latest-cxzf.onrender.com';
+
+  // ─── Error knowledge base ──────────────────────────────────────────────────
+  // Maps cobalt error codes → { title, fix } shown to the user
+  const ERROR_HINTS = {
+    'error.api.youtube.login': {
+      title: 'YouTube requires authentication',
+      fix: `Your Cobalt engine needs YouTube cookies to download this video.<br><br>
+        <b>Fix:</b><br>
+        1. Install <a href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally" target="_blank">"Get cookies.txt LOCALLY"</a> extension<br>
+        2. Visit <a href="https://youtube.com" target="_blank">youtube.com</a> while logged in → export cookies<br>
+        3. In Render → <b>Secret Files</b> → create <code>/etc/secrets/cookies.json</code><br>
+        4. Format: <code>{"youtube.com": "SID=xxx; HSID=xxx; SSID=xxx; ..."}</code><br>
+        5. Add env var <code>COOKIE_PATH = /etc/secrets/cookies.json</code> → Redeploy`
+    },
+    'error.api.youtube.age': {
+      title: 'YouTube age-restricted video',
+      fix: `This video requires a logged-in YouTube account to access.<br>
+        Same fix as the login error — add your YouTube cookies to the Cobalt engine.`
+    },
+    'error.api.twitter': {
+      title: 'Twitter/X IP block',
+      fix: `Render's datacenter IP is blocked by Twitter/X CDN.<br><br>
+        <b>Fix — add a residential proxy:</b><br>
+        1. Sign up at <a href="https://webshare.io" target="_blank">webshare.io</a> (free tier available)<br>
+        2. Get a proxy in format <code>host:port:user:pass</code><br>
+        3. In Render env vars add:<br>
+        &nbsp;&nbsp;<code>HTTPS_PROXY = http://user:pass@host:port</code><br>
+        &nbsp;&nbsp;<code>HTTP_PROXY = http://user:pass@host:port</code><br>
+        4. Redeploy`
+    },
+    'error.api.fetch.fail': {
+      title: 'Platform fetch failed (IP block)',
+      fix: `The engine could not reach the platform — likely a datacenter IP block on Render.<br><br>
+        <b>Quick fix:</b> Add a residential proxy via <a href="https://webshare.io" target="_blank">webshare.io</a> (free).<br>
+        Set <code>HTTPS_PROXY = http://user:pass@host:port</code> in Render env vars.<br><br>
+        <b>Long-term fix:</b> Migrate engine to <a href="https://fly.io" target="_blank">Fly.io</a> — dedicated IPs, less flagged.`
+    },
+    'error.api.content.unavailable': {
+      title: 'Content unavailable',
+      fix: `This content is private, deleted, or geo-restricted.`
+    },
+    'error.api.content.too_long': {
+      title: 'Video too long',
+      fix: `The engine has a duration limit. Try a shorter clip, or self-host Cobalt with a higher limit.`
+    },
+    'error.api.rate_limit': {
+      title: 'Rate limited',
+      fix: `Too many requests to the engine. Wait 30 seconds and try again.`
+    },
+    'error.api.link.unsupported': {
+      title: 'URL not supported',
+      fix: `This URL format isn't recognised by Cobalt. Make sure you're using a direct link to a video, not a playlist or search page.`
+    },
+    'engine_wake': {
+      title: 'Engine is waking up',
+      fix: `Render free tier spins down after inactivity. <b>Wait ~30 seconds</b> and try again — it will work once warm.`
+    }
+  };
+
+  // ─── Platform tags ─────────────────────────────────────────────────────────
+  const PLATFORMS = [
+    "YouTube","Instagram","TikTok","Twitter / X","Reddit","Vimeo",
+    "Twitch","SoundCloud","Bilibili","Pinterest","Facebook",
+    "Dailymotion","Tumblr","VK","OK.ru","Streamable","Loom","& more"
+  ];
+
+  const grid = document.getElementById('platforms');
+  PLATFORMS.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'platform-tag';
+    el.textContent = p;
+    grid.appendChild(el);
+  });
+
+  // ─── Enter key ─────────────────────────────────────────────────────────────
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') grab();
+  });
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  function setStatus(msg, type = 'idle') {
+    const el = document.getElementById('status');
+    el.className = `status-${type}`;
+    el.innerHTML = msg;
+  }
+
+  function clearResult() {
+    document.getElementById('result').className = '';
+    document.getElementById('result').innerHTML = '';
+    document.getElementById('error-detail').innerHTML = '';
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+      .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function guessFilename(url) {
+    try {
+      const parts = new URL(url).pathname.split('/').filter(Boolean);
+      return parts[parts.length - 1] || 'video';
+    } catch { return 'video'; }
+  }
+
+  // ─── Error display ─────────────────────────────────────────────────────────
+  function showError(code, rawMsg) {
+    const hint = ERROR_HINTS[code] || ERROR_HINTS[
+      // partial match (e.g. error.api.twitter.xxx -> error.api.twitter)
+      Object.keys(ERROR_HINTS).find(k => code && code.startsWith(k))
     ];
 
-    const grid = document.getElementById('platforms');
-    PLATFORMS.forEach(p => {
-      const el = document.createElement('div');
-      el.className = 'platform-tag';
-      el.textContent = p;
-      grid.appendChild(el);
-    });
+    setStatus(`// ${code || rawMsg || 'error'}`, 'error');
 
-    document.getElementById('url-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') grab();
-    });
-
-    function setStatus(msg, type = 'idle') {
-      const el = document.getElementById('status');
-      el.className = `status-${type}`;
-      el.innerHTML = msg;
-    }
-
-    function hideResult() {
-      const r = document.getElementById('result');
-      r.className = '';
-      r.innerHTML = '';
-    }
-
-    async function grab() {
-      const urlInput = document.getElementById('url-input');
-      const url = urlInput.value.trim();
-
-      if (!url) {
-        setStatus('// paste a video URL first', 'error');
-        urlInput.focus();
-        return;
-      }
-
-      const quality    = document.getElementById('quality').value;
-      const formatVal = document.getElementById('format').value;
-      const audioOnly = ['mp3','ogg','wav','opus'].includes(formatVal);
-
-      const btn = document.getElementById('grab-btn');
-      btn.disabled = true;
-      hideResult();
-      setStatus('<span class="spinner"></span> connecting to engine...', 'loading');
-
-      const body = { url };
-      if (quality !== 'max') body.videoQuality = quality;
-      if (audioOnly) {
-        body.downloadMode = 'audio';
-        body.audioFormat  = formatVal;
-      } else if (formatVal !== 'auto') {
-        body.videoFormat = formatVal;
-      }
-
-      try {
-        // Updated to your personal Render instance
-        const res = await fetch('https://cobalt-latest-cxzf.onrender.com/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(body)
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || data.status === 'error') {
-          const msg = data?.error?.code || data?.text || 'Unknown engine error';
-          setStatus(`// error: ${msg}`, 'error');
-          btn.disabled = false;
-          return;
-        }
-
-        if (data.status === 'redirect' || data.status === 'tunnel') {
-          renderSingleResult(data);
-        } else if (data.status === 'picker') {
-          renderPicker(data);
-        } else {
-          setStatus(`// unexpected response: ${data.status}`, 'error');
-        }
-
-      } catch (err) {
-        // Since Render free tier sleeps, give a more helpful error
-        setStatus(`// engine is waking up or network error. please wait 30s and try again.`, 'error');
-        console.error(err);
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    function renderSingleResult(data) {
-      setStatus('// ready to download ↓', 'success');
-      const filename = data.filename || guessFilename(data.url);
-      const result = document.getElementById('result');
-      result.innerHTML = `
-        <div class="result-inner">
-          <div class="result-filename">
-            <span>File</span>
-            ${esc(filename)}
-          </div>
-          <a class="dl-btn" href="${esc(data.url)}" download="${esc(filename)}" target="_blank">
-            ↓ Download
-          </a>
+    const detailEl = document.getElementById('error-detail');
+    if (hint) {
+      detailEl.innerHTML = `
+        <div class="err-box">
+          <div class="err-title">⚠ ${hint.title}</div>
+          <div class="err-fix">${hint.fix}</div>
         </div>
       `;
-      result.className = 'visible';
+    } else {
+      detailEl.innerHTML = `
+        <div class="err-box">
+          <div class="err-title">⚠ Engine error</div>
+          <div class="err-fix">${esc(rawMsg || code || 'Unknown error')}</div>
+        </div>
+      `;
+    }
+  }
+
+  // ─── Main ──────────────────────────────────────────────────────────────────
+  async function grab() {
+    const urlInput = document.getElementById('url-input');
+    const url = urlInput.value.trim();
+
+    if (!url) {
+      setStatus('// paste a video URL first', 'error');
+      urlInput.focus();
+      return;
     }
 
-    function renderPicker(data) {
-      setStatus(`// ${data.picker.length} items found — pick one to download`, 'success');
-      const result = document.getElementById('result');
-      let html = '<div id="picker-grid">';
-      data.picker.forEach((item, i) => {
-        const label = item.type === 'photo' ? `Photo ${i+1}` : `Video ${i+1}`;
-        const thumb = item.thumb ? `<img src="${esc(item.thumb)}" alt="${label}" loading="lazy" />` : '';
-        html += `
-          <div class="picker-item">
-            ${thumb}
-            <a href="${esc(item.url)}" download="${label}" target="_blank">↓ ${label}</a>
-          </div>
-        `;
+    const quality   = document.getElementById('quality').value;
+    const formatVal = document.getElementById('format').value;
+    const audioOnly = ['mp3','ogg','wav','opus'].includes(formatVal);
+
+    const btn = document.getElementById('grab-btn');
+    btn.disabled = true;
+    clearResult();
+    setStatus('<span class="spinner"></span> contacting engine...', 'loading');
+
+    const body = { url };
+    if (quality !== 'max') body.videoQuality = quality;
+    if (audioOnly) {
+      body.downloadMode = 'audio';
+      body.audioFormat  = formatVal;
+    } else if (formatVal !== 'auto') {
+      body.videoFormat = formatVal;
+    }
+
+    let res, data;
+
+    try {
+      res = await fetch(ENGINE + '/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(body)
       });
-      html += '</div>';
-      result.innerHTML = html;
-      result.className = 'visible';
+    } catch (netErr) {
+      // Network-level failure = engine is down / waking up
+      showError('engine_wake', netErr.message);
+      btn.disabled = false;
+      return;
     }
 
-    function guessFilename(url) {
-      try {
-        const parts = new URL(url).pathname.split('/').filter(Boolean);
-        return parts[parts.length - 1] || 'video';
-      } catch { return 'video'; }
+    // Try to parse JSON
+    let raw = '';
+    try {
+      raw = await res.text();
+      data = JSON.parse(raw);
+    } catch {
+      showError(null, `Engine returned non-JSON (HTTP ${res.status}). Check CORS_WILDCARD=1 env var.`);
+      btn.disabled = false;
+      return;
     }
 
-    function esc(s) {
-      return String(s)
-        .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
-        .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    // Cobalt-level error
+    if (!res.ok || data.status === 'error') {
+      const code   = data?.error?.code || '';
+      const rawMsg = data?.text || data?.error || 'Unknown engine error';
+      showError(code, rawMsg);
+      btn.disabled = false;
+      return;
     }
-  </script>
+
+    // ── Success ──────────────────────────────────────────────────────────────
+    if (data.status === 'redirect' || data.status === 'tunnel') {
+      renderSingle(data);
+    } else if (data.status === 'picker') {
+      renderPicker(data);
+    } else {
+      showError(null, `Unexpected engine response: ${data.status}`);
+    }
+
+    btn.disabled = false;
+  }
+
+  function renderSingle(data) {
+    setStatus('// ready ↓', 'success');
+    const filename = data.filename || guessFilename(data.url);
+    const result = document.getElementById('result');
+    result.innerHTML = `
+      <div class="result-inner">
+        <div class="result-filename">
+          <span>File</span>${esc(filename)}
+        </div>
+        <a class="dl-btn" href="${esc(data.url)}" download="${esc(filename)}" target="_blank">↓ Download</a>
+      </div>
+    `;
+    result.className = 'visible';
+  }
+
+  function renderPicker(data) {
+    const items = data.picker || [];
+    setStatus(`// ${items.length} items found — pick one`, 'success');
+    const result = document.getElementById('result');
+    let html = '<div id="picker-grid">';
+    items.forEach((item, i) => {
+      const label = item.type === 'photo' ? `Photo ${i+1}` : `Video ${i+1}`;
+      const thumb = item.thumb ? `<img src="${esc(item.thumb)}" alt="${label}" loading="lazy" />` : '';
+      html += `<div class="picker-item">${thumb}<a href="${esc(item.url)}" download="${label}" target="_blank">↓ ${label}</a></div>`;
+    });
+    // Separate audio track if present
+    if (data.audio) {
+      html += `<div class="picker-item"><a href="${esc(data.audio)}" download="audio" target="_blank">↓ Audio track</a></div>`;
+    }
+    html += '</div>';
+    result.innerHTML = html;
+    result.className = 'visible';
+  }
+</script>
 </body>
 </html>
