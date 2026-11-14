@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRABR — Video Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: #222222;
+      --accent: #e8ff00;
+      --accent-dim: rgba(232, 255, 0, 0.08);
+      --text: #f0f0f0;
+      --muted: #555;
+      --error: #ff4545;
+      --warn: #ff9500;
+      --success: #00e87a;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(4rem, 14vw, 9rem);
+      letter-spacing: 0.05em;
+      line-height: 1;
+      color: var(--accent);
+      text-shadow: 0 0 60px rgba(232,255,0,0.25);
+    }
+
+    .tagline {
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 640px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .input-row {
+      display: flex;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+
+    .input-row:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232,255,0,0.08);
+    }
+
+    #url-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      padding: 0.9rem 1rem;
+      min-width: 0;
+    }
+
+    #url-input::placeholder { color: var(--muted); }
+
+    #grab-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+      padding: 0 1.6rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    #grab-btn:hover { background: #f5ff44; }
+    #grab-btn:active { transform: scale(0.97); }
+    #grab-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    .options {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.2rem;
+      flex-wrap: wrap;
+    }
+
+    .opt-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.7rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    select:focus { border-color: var(--accent); }
+
+    /* ── Status ── */
+    #status {
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      min-height: 1.2em;
+    }
+
+    .status-idle    { color: var(--muted); }
+    .status-loading { color: var(--accent); }
+    .status-success { color: var(--success); }
+    .status-error   { color: var(--error); }
+
+    /* Rich error box */
+    .err-box {
+      margin-top: 1rem;
+      border: 1px solid var(--error);
+      background: rgba(255,69,69,0.05);
+      padding: 0.9rem 1rem;
+      font-size: 0.75rem;
+      line-height: 1.7;
+      color: var(--error);
+      animation: fadeUp 0.2s ease both;
+    }
+
+    .err-box .err-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      color: var(--error);
+    }
+
+    .err-box .err-fix {
+      color: var(--warn);
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      line-height: 1.6;
+    }
+
+    .err-box .err-fix b { color: var(--text); }
+
+    /* neutral variant of the box, used for setup steps */
+    .err-box.info-box {
+      border-color: #3a3f00;
+      background: var(--accent-dim);
+      color: var(--text);
+    }
+    .info-box .err-title { color: var(--accent); }
+    .info-box .err-fix { color: #b9b9b9; }
+
+    .cmd {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin: 0.5rem 0 0.7rem;
+      padding: 0.6rem 0.7rem;
+      background: #070707;
+      border: 1px solid var(--border);
+    }
+    .cmd code { flex: 1; color: var(--text); word-break: break-all; }
+
+    .mini-btn {
+      font-family: inherit;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--accent);
+      padding: 0.25rem 0.55rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .mini-btn:hover { background: var(--accent); color: #000; }
+
+    .err-box a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .err-box a:hover { text-decoration: underline; }
+
+    .err-box .err-tried {
+      margin-top: 0.8rem;
+      padding-top: 0.6rem;
+      border-top: 1px dashed rgba(255,69,69,0.35);
+      color: var(--muted);
+      font-size: 0.65rem;
+      word-break: break-word;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 0.7em;
+      height: 0.7em;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 0.4em;
+    }
+
+    /* ── Results ── */
+    #result { margin-top: 1.5rem; display: none; }
+    #result.visible { display: block; }
+
+    .result-inner {
+      border: 1px solid var(--border);
+      background: var(--accent-dim);
+      padding: 1rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      animation: fadeUp 0.25s ease both;
+    }
+
+    .result-filename {
+      flex: 1;
+      font-size: 0.78rem;
+      color: var(--text);
+      word-break: break-all;
+      min-width: 0;
+    }
+
+    .result-filename span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.65rem;
+      margin-bottom: 0.2rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent);
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      padding: 0.55rem 1.2rem;
+      text-decoration: none;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .dl-btn:hover { background: #f5ff44; }
+    .dl-btn:active { transform: scale(0.97); }
+
+    button.dl-btn { border: none; cursor: pointer; }
+    button.dl-btn:disabled { opacity: 0.55; cursor: wait; }
+
+    .result-preview {
+      height: 64px;
+      max-width: 120px;
+      object-fit: cover;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .result-note {
+      flex-basis: 100%;
+      font-size: 0.68rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .result-note:empty { display: none; }
+    .result-note a { color: var(--accent); }
+
+    /* Picker grid */
+    #picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .picker-item {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .picker-item img {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      display: block;
+    }
+
+    .picker-item a {
+      display: block;
+      text-align: center;
+      background: var(--accent);
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      padding: 0.5rem;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .picker-item a:hover { background: #f5ff44; }
+
+    /* ── Debug log ── */
+    .debug-toggle {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 0.75rem;
+      display: block;
+      transition: color 0.15s;
+    }
+    .debug-toggle:hover { color: #888; }
+
+    .debug-box {
+      margin-top: 0.5rem;
+      background: #070707;
+      border: 1px solid #1a1a1a;
+      padding: 0.75rem;
+      font-size: 0.6rem;
+      color: #4a4a4a;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    /* ── Platforms ── */
+    .supported {
+      margin-top: 3rem;
+      text-align: center;
+      animation: fadeUp 0.6s 0.25s ease both;
+    }
+
+    .supported p {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.8rem;
+    }
+
+    .platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+      max-width: 540px;
+    }
+
+    .platform-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.6rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .platform-tag:hover { color: var(--accent); border-color: var(--accent); }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      color: #333;
+      text-align: center;
+      animation: fadeUp 0.6s 0.35s ease both;
+    }
+
+    footer a { color: #444; text-decoration: none; }
+    footer a:hover { color: var(--muted); }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .card { padding: 1.4rem; }
+      .options { gap: 1rem; }
+      .input-row { flex-direction: column; }
+      #grab-btn { padding: 0.85rem; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="logo">GRABR</div>
+    <div class="tagline">Paste any video link — get the file</div>
+  </header>
+
+  <div class="card">
+    <div class="input-row">
+      <input
+        id="url-input"
+        type="url"
+        placeholder="https://youtube.com/watch?v=... or any video URL"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="grab-btn" onclick="grab()">GRAB</button>
+    </div>
+
+    <div class="options">
+      <div>
+        <span class="opt-label">Quality</span>
+        <select id="quality">
+          <option value="max">Max</option>
+          <option value="2160">4K</option>
+          <option value="1440">1440p</option>
+          <option value="1080" selected>1080p</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+        </select>
+      </div>
+      <div>
+        <span class="opt-label">Format</span>
+        <select id="format">
+          <option value="auto">Video (default)</option>
+          <option value="mute">Video (no audio)</option>
+          <option value="mp3">Audio — MP3</option>
+          <option value="ogg">Audio — OGG</option>
+          <option value="wav">Audio — WAV</option>
+          <option value="opus">Audio — Opus</option>
+        </select>
+      </div>
+      <div>
+        <span class="opt-label">Engine</span>
+        <select id="engine">
+          <option value="cloud">Cloud</option>
+          <option value="local">This PC first</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="status" class="status-idle">// ready</div>
+    <div id="error-detail"></div>
+    <div id="result"></div>
+  </div>
+
+  <div class="supported">
+    <p>Supported platforms include</p>
+    <div class="platforms" id="platforms"></div>
+  </div>
+
+  <footer>
+    Powered by <a href="https://github.com/imputnet/cobalt" target="_blank">cobalt engine</a>
+    &nbsp;·&nbsp; No data stored &nbsp;·&nbsp; No tracking
+  </footer>
+
+</div>
+
+<script>
+  // ─── Config ────────────────────────────────────────────────────────────────
+  // Engines are tried in order. If one is asleep, down, or refused by the
+  // platform, GRABR moves on to the next. To add an engine, add a line here.
+  //
+  // "This PC" is a Cobalt engine running on your own computer. It is only used
+  // when Engine is set to "This PC first". Big platforms block cloud servers but
+  // not home internet connections, so it keeps working where the cloud ones fail.
+  const ENGINES = [
+    { name: 'This PC',      url: 'http://localhost:9000', local: true },
+    { name: 'Render',       url: 'https://cobalt-latest-cxzf.onrender.com', page: 'https://dashboard.render.com' },
+    { name: 'Hugging Face', url: 'https://rahuljacobj-cobalt.hf.space',     page: 'https://huggingface.co/spaces/rahuljacobj/cobalt' }
+  ];
+  // PowerShell lines for the engine on this PC (shown in the setup box)
+  const LOCAL_SETUP_CMD = 'docker run -d --name cobalt --init --restart unless-stopped -p 127.0.0.1:9000:9000 -e API_URL=http://localhost:9000/ ghcr.io/imputnet/cobalt:11';
+  const LOCAL_UPDATE_CMD = 'docker pull ghcr.io/imputnet/cobalt:11; docker rm -f cobalt; ' + LOCAL_SETUP_CMD;
+  const WAKE_TIMEOUT_MS = 120000; // how long to wait for a sleeping engine before giving up on it
+  const CALL_TIMEOUT_MS = 90000;  // longest a single request to an engine may take
+
+  // Errors that would be the same on every engine — no point asking another one
+  const FINAL_ERRORS = [
+    'error.api.link.', 'error.api.invalid_body',
+    'error.api.service.unsupported', 'error.api.service.audio_not_supported',
+    'error.api.content.too_long', 'error.api.content.paid', 'error.api.content.video.live',
+    'error.api.content.video.private', 'error.api.content.post.private', 'error.api.youtube.drm'
+  ];
+  // Errors that say little about the cause — a more specific one from another engine is shown instead
+  const VAGUE_ERRORS = [
+    'error.api.fetch.', 'error.api.generic', 'error.api.unreachable', 'error.api.timed_out',
+    'error.api.capacity', 'error.api.unknown_response', 'engine_wake', 'engine_off'
+  ];
+  const PC_FIX = `<b>Fix that lasts:</b> run the engine on your own PC — set <b>Engine</b> above to <b>This PC first</b> and follow the steps shown. A home internet connection is not blocked the way cloud servers are.`;
+
+  // ─── Error knowledge base ──────────────────────────────────────────────────
+  // Maps cobalt error codes → { title, fix } shown to the user
+  const ERROR_HINTS = {
+    'error.api.youtube.login': {
+      title: 'YouTube asked the engine to sign in',
+      fix: `YouTube puts a sign-in check in front of cloud servers before it hands over a video, and it did that here. It cannot be switched off for free on a cloud host.<br><br>
+        ${PC_FIX}`,
+      titleLocal: 'YouTube asked the engine on this PC to sign in',
+      fixLocal: `YouTube showed its sign-in check even to the engine on this PC. On a home connection that usually clears by itself — try again in a while. A VPN triggers it too, so switch any VPN off.`
+    },
+    'error.api.youtube.age': {
+      title: 'YouTube age-restricted video',
+      fix: `This video needs a signed-in YouTube account, which the engines don't have.`
+    },
+    'error.api.fetch.fail': {
+      title: 'The cloud engines could not fetch this',
+      fix: `Big platforms refuse cloud servers, or the cloud host cuts them off, and no engine got through.<br><br>
+        · <b>Hugging Face</b> does not let its servers reach some sites — YouTube and Facebook fail there.<br>
+        · <b>Render</b> addresses are refused now and then by YouTube and Twitter/X.<br><br>
+        ${PC_FIX}`,
+      titleLocal: 'The engine on this PC could not fetch this',
+      fixLocal: `Even the engine on this PC got no usable answer from the platform.<br><br>
+        · Check that the link opens and plays in a normal browser tab.<br>
+        · If every link from this platform fails, the platform changed something. Update the engine — paste this in PowerShell, then try again:
+        <div class="cmd"><code>${LOCAL_UPDATE_CMD}</code></div>`
+    },
+    'error.api.fetch.empty': {
+      title: 'The platform sent no video',
+      fix: `The platform answered, but with no video in the page. Usually the post is private or removed, or the platform showed the engine a login wall instead.`
+    },
+    'error.api.content.unavailable': {
+      title: 'Content unavailable',
+      fix: `This content is private, deleted, or geo-restricted.`
+    },
+    'error.api.content.video.unavailable': {
+      title: 'This video is unavailable',
+      fix: `YouTube is blocking this specific video — it may be:<br>
+        · <b>Region-locked</b> where the engine runs<br>
+        · <b>Age-restricted</b><br>
+        · <b>Private or deleted</b> by the uploader<br><br>
+        Try a different video to confirm the engines are working.`
+    },
+    'error.api.content.too_long': {
+      title: 'Video too long',
+      fix: `The engine has a duration limit. Try a shorter clip.`
+    },
+    'error.api.rate_exceeded': {
+      title: 'Rate limited',
+      fix: `Too many requests to the engine. Wait 30 seconds and try again.`
+    },
+    'error.api.link.unsupported': {
+      title: 'URL not supported',
+      fix: `This URL format isn't recognised by Cobalt. Make sure you're using a direct link to a video, not a playlist or search page.`
+    },
+    'error.api.link.invalid': {
+      title: 'Site not supported by the engine',
+      fix: `The engine only understands links from the platforms listed below, and this link isn't from one of them.<br><br>
+        · Make sure it is the link of the post / video page itself, not a search or profile page.<br>
+        · Giphy links and direct file links (<code>.mp4</code>, <code>.gif</code>, <code>.webm</code> …) are saved by GRABR itself — paste the GIF's page link or the file link.`
+    },
+    'engine_wake': {
+      title: 'No engine answered',
+      fix: `The engines run on free hosts that sleep when idle. GRABR tried to wake them and got no answer.<br><br>
+        ${ENGINES.filter(e => e.page).map(e => `· <a href="${e.page}" target="_blank">${e.name}</a> — open it and check the engine is running, then try again`).join('<br>')}`
+    }
+  };
+
+  // ─── Platform tags ─────────────────────────────────────────────────────────
+  // Shown until the engine answers; then replaced by the engine's real list.
+  const DEFAULT_PLATFORMS = [
+    "YouTube","Instagram","TikTok","Twitter / X","Reddit","Vimeo",
+    "Twitch","SoundCloud","Bilibili","Pinterest","Facebook",
+    "Dailymotion","Tumblr","VK","OK.ru","Streamable","Loom"
+  ];
+  // Handled by GRABR in the browser — no engine involved
+  const LOCAL_PLATFORMS = ["Giphy", "Direct file links"];
+  const PRETTY_NAMES = { twitter: "Twitter / X", ok: "OK.ru" };
+
+  function renderPlatforms(list) {
+    const grid = document.getElementById('platforms');
+    grid.innerHTML = '';
+    [...list, ...LOCAL_PLATFORMS].forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'platform-tag';
+      el.textContent = PRETTY_NAMES[p] || p;
+      grid.appendChild(el);
+    });
+  }
+  renderPlatforms(DEFAULT_PLATFORMS);
+
+  // ─── Enter key ─────────────────────────────────────────────────────────────
+  document.getElementById('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') grab();
+  });
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  function setStatus(msg, type = 'idle') {
+    const el = document.getElementById('status');
+    el.className = `status-${type}`;
+    el.innerHTML = msg;
+  }
+
+  function clearResult() {
+    document.getElementById('result').className = '';
+    document.getElementById('result').innerHTML = '';
+    document.getElementById('error-detail').innerHTML = '';
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+      .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function guessFilename(url) {
+    try {
+      const parts = new URL(url).pathname.split('/').filter(Boolean);
+      return parts[parts.length - 1] || 'video';
+    } catch { return 'video'; }
+  }
+
+  // ─── Error display ─────────────────────────────────────────────────────────
+  function showError(code, rawMsg, tried) {
+    const hint = ERROR_HINTS[code] || ERROR_HINTS[
+      // partial match (e.g. error.api.youtube.login.xxx -> error.api.youtube.login)
+      Object.keys(ERROR_HINTS).find(k => code && code.startsWith(k))
+    ];
+    tried = tried || [];
+
+    setStatus(`// ${esc(code === 'engine_wake' ? 'no engine answered' : (code || rawMsg || 'error'))}`, 'error');
+
+    // did the engine on this PC give this answer, or was it switched off?
+    const localSaid = tried.some(t => t.engine.local && t.code === code);
+    const localOff  = tried.some(t => t.engine.local && t.code === 'engine_off');
+
+    const label = t => (t.code === 'engine_wake' ? 'no answer' : t.code === 'engine_off' ? 'not running' : (t.code || t.msg));
+    const triedLine = tried.length
+      ? `<div class="err-tried">${tried.map(t => `${esc(t.engine.name)} → ${esc(label(t))}`).join(' &nbsp;·&nbsp; ')}</div>`
+      : '';
+    const offLine = localOff
+      ? `<div class="err-fix"><b>The engine on this PC is not running.</b> Open Docker Desktop, wait until it shows the engine as running, then try again.</div>`
+      : '';
+
+    const title = hint ? ((localSaid && hint.titleLocal) || hint.title) : 'Engine error';
+    const fix   = hint ? ((localSaid && hint.fixLocal) || hint.fix) : esc(rawMsg || code || 'Unknown error');
+
+    document.getElementById('error-detail').innerHTML = `
+      <div class="err-box">
+        <div class="err-title">⚠ ${title}</div>
+        <div class="err-fix">${fix}</div>
+        ${offLine}
+        ${triedLine}
+      </div>
+    `;
+  }
+
+  // ─── Direct downloads (no engine) ──────────────────────────────────────────
+  // Giphy and plain file links are not "platforms" the Cobalt engine extracts —
+  // it answers error.api.link.invalid for them. They are already files, so the
+  // browser can save them by itself.
+  const MEDIA_EXT = /\.(mp4|m4v|mov|webm|mkv|gif|webp|png|jpe?g|mp3|m4a|aac|ogg|oga|opus|wav|flac)$/i;
+  const TYPE_EXT = {
+    'image/gif': 'gif', 'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg',
+    'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
+    'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/ogg': 'ogg', 'audio/wav': 'wav'
+  };
+
+  // Pull the GIF id out of any Giphy link:
+  //   giphy.com/gifs/some-title-<id>          media.giphy.com/media/<id>/giphy.gif
+  //   giphy.com/embed/<id>                    media2.giphy.com/media/v1.<token>/<id>/giphy.gif
+  //   i.giphy.com/<id>.gif                    i.giphy.com/media/<id>/giphy.mp4
+  function giphyId(u) {
+    if (!/(^|\.)giphy\.com$/i.test(u.hostname)) return null;
+    const seg = u.pathname.split('/').filter(Boolean);
+    const valid = s => (/^[A-Za-z0-9]{5,}$/.test(s || '') ? s : null);
+    const mi = seg.indexOf('media');
+    if (mi !== -1) {
+      let i = mi + 1;
+      if (/^v\d+\./.test(seg[i] || '')) i++;           // skip the "v1.<token>" part
+      return valid(seg[i]);
+    }
+    if (['gifs', 'stickers', 'clips', 'embed'].includes(seg[0])) {
+      return valid((seg[1] || '').split('-').pop());
+    }
+    if (/^i\./i.test(u.hostname) && seg.length === 1) {
+      return valid(seg[0].replace(/\.[a-z0-9]+$/i, ''));
+    }
+    return null;
+  }
+
+  function giphyUrls(id, ext, pasted) {
+    const list = [
+      `https://i.giphy.com/media/${id}/giphy.${ext}`,
+      `https://media.giphy.com/media/${id}/giphy.${ext}`,
+      `https://i.giphy.com/${id}.${ext}`
+    ];
+    // the pasted link is the best source when it already is that kind of file
+    if (pasted.pathname.toLowerCase().endsWith('.' + ext)) list.unshift(pasted.href);
+    return list;
+  }
+
+  // Returns a description of what to download, or null if the engine is needed.
+  function resolveDirect(raw) {
+    let u;
+    try { u = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw); }
+    catch { return null; }
+
+    const id = giphyId(u);
+    if (id) {
+      return {
+        kind: 'giphy',
+        title: `giphy-${id}`,
+        preview: `https://i.giphy.com/media/${id}/200.gif`,
+        files: [
+          { label: 'GIF', name: `giphy-${id}.gif`, accept: 'image/gif', urls: giphyUrls(id, 'gif', u) },
+          { label: 'MP4', name: `giphy-${id}.mp4`, accept: 'video/mp4', urls: giphyUrls(id, 'mp4', u) }
+        ]
+      };
+    }
+
+    if (MEDIA_EXT.test(u.pathname)) {
+      const name = decodeURIComponent(guessFilename(u.href));
+      return {
+        kind: 'file',
+        title: name,
+        preview: null,
+        files: [{ label: 'Download', name, accept: null, urls: [u.href] }]
+      };
+    }
+    return null;
+  }
+
+  function fmtSize(bytes) {
+    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+  }
+
+  function renderDirect(d) {
+    setStatus(
+      d.kind === 'giphy' ? '// giphy link — no engine needed ↓' : '// direct file link — no engine needed ↓',
+      'success'
+    );
+    const result = document.getElementById('result');
+    const preview = d.preview
+      ? `<img class="result-preview" src="${esc(d.preview)}" alt="" onerror="this.remove()" />`
+      : '';
+    const buttons = d.files
+      .map((f, i) => `<button class="dl-btn" type="button" data-i="${i}">↓ ${esc(f.label)}</button>`)
+      .join('');
+    result.innerHTML = `
+      <div class="result-inner">
+        ${preview}
+        <div class="result-filename"><span>File</span>${esc(d.title)}</div>
+        ${buttons}
+        <div class="result-note" id="direct-note"></div>
+      </div>
+    `;
+    result.className = 'visible';
+    result.querySelectorAll('button.dl-btn').forEach(b => {
+      b.addEventListener('click', () => saveDirect(d.files[Number(b.dataset.i)], b));
+    });
+  }
+
+  // Fetch the file into memory and hand it to the browser as a normal download.
+  // If the host does not allow that (CORS), fall back to a plain link.
+  async function saveDirect(file, btn) {
+    const note = document.getElementById('direct-note');
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> fetching';
+    if (note) note.textContent = '';
+
+    let blob = null;
+    for (const u of file.urls) {
+      try {
+        const r = await fetch(u, {
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
+          headers: file.accept ? { 'Accept': file.accept } : {}
+        });
+        if (!r.ok) continue;
+        const type = (r.headers.get('content-type') || '').toLowerCase();
+        if (type.startsWith('text/')) continue;          // a web page, not the file
+        const b = await r.blob();
+        if (b.size > 0) { blob = b; break; }
+      } catch { /* blocked or unreachable — try the next address */ }
+    }
+
+    btn.disabled = false;
+    btn.textContent = label;
+
+    if (!blob) {
+      if (note) {
+        note.innerHTML = `Couldn't save it automatically — the host doesn't allow in-page downloads.
+          <a href="${esc(file.urls[0])}" target="_blank" rel="noopener">Open the file</a>
+          and use right-click → “Save as”.`;
+      }
+      return;
+    }
+
+    // keep the extension honest if the host sent a different format than asked
+    let name = file.name;
+    const realExt = TYPE_EXT[(blob.type || '').split(';')[0].trim()];
+    if (realExt && !name.toLowerCase().endsWith('.' + realExt) &&
+        !(realExt === 'jpg' && /\.jpeg$/i.test(name))) {
+      name = name.replace(/\.[a-z0-9]+$/i, '') + '.' + realExt;
+    }
+
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 60000);
+    if (note) note.textContent = `saved ${name} (${fmtSize(blob.size)})`;
+  }
+
+  // ─── Engines ───────────────────────────────────────────────────────────────
+  // Free hosts sleep when idle and need a minute or so to start again; any
+  // request wakes them. engine.state: 'unknown' (no answer yet) | 'up' | 'dead'
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function getPref(key) { try { return localStorage.getItem(key); } catch { return null; } }
+  function setPref(key, val) { try { localStorage.setItem(key, val); } catch { /* storage unavailable */ } }
+
+  let useLocal = getPref('grabr.engine') === 'local';
+  const localEngine = ENGINES.find(e => e.local);
+  const activeEngines = () => ENGINES.filter(e => !e.local || useLocal);
+
+  // A public https page may only talk to an app on this PC if the request says
+  // so up front; the browser then asks the user for permission once. Browsers
+  // spell that option differently, so find the spelling this one accepts.
+  const LOOPBACK_SPACE = (() => {
+    for (const space of ['loopback', 'local']) {
+      try { new Request('http://localhost/', { targetAddressSpace: space }); return space; }
+      catch { /* this spelling is not accepted here */ }
+    }
+    return null;
+  })();
+
+  function fetchEngine(engine, init) {
+    if (engine.local && LOOPBACK_SPACE) init = { ...init, targetAddressSpace: LOOPBACK_SPACE };
+    return fetch(engine.url + '/', init);
+  }
+
+  // 'granted' | 'prompt' | 'denied' | 'unknown' — may this page reach apps on this PC?
+  async function localPermission() {
+    for (const name of ['loopback-network', 'local-network-access']) {
+      try { return (await navigator.permissions.query({ name })).state; }
+      catch { /* this browser does not know the name */ }
+    }
+    return 'unknown';
+  }
+
+  function refreshPlatforms() {
+    const all = [];
+    ENGINES.forEach(e => (e.services || []).forEach(s => { if (!all.includes(s)) all.push(s); }));
+    if (all.length) renderPlatforms(all.sort());
+  }
+
+  async function pingEngine(engine, timeoutMs = 8000) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const r = await fetchEngine(engine, {
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+        signal: ctl.signal
+      });
+      if (!r.ok) return false;
+      const info = await r.json();
+      const services = info && info.cobalt && info.cobalt.services;
+      if (!Array.isArray(services)) return false;
+      engine.state = 'up';
+      engine.failedWake = false;
+      engine.services = services;
+      refreshPlatforms();
+      return true;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Keep knocking until the engine answers or its time is up.
+  // An engine that already failed to wake once only gets a short second chance.
+  function wakeEngine(engine) {
+    const budget = engine.failedWake ? 15000 : WAKE_TIMEOUT_MS;
+    engine.state = 'unknown';
+    engine.wakeStarted = Date.now();
+    engine.waking = (async () => {
+      while (Date.now() - engine.wakeStarted < budget) {
+        if (await pingEngine(engine)) return true;
+        await sleep(4000);
+      }
+      engine.state = 'dead';
+      engine.failedWake = true;
+      return false;
+    })();
+    return engine.waking;
+  }
+
+  // POST to one engine. null = no connection; data null = the answer was not JSON.
+  async function postEngine(engine, body) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), CALL_TIMEOUT_MS);
+    try {
+      const res = await fetchEngine(engine, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(body),
+        signal: ctl.signal
+      });
+      const raw = await res.text();
+      try { return { res, data: JSON.parse(raw) }; }
+      catch { return { res, data: null }; }
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Ask one engine; if it is asleep, wait for it to wake and ask once more.
+  async function askEngine(engine, body, onWaiting) {
+    // the engine on this PC is either running or not — there is nothing to wake
+    if (engine.local) return postEngine(engine, body);
+
+    if (engine.state === 'dead') {
+      wakeEngine(engine);            // re-check it in the background for next time
+      return null;
+    }
+
+    let out = null;
+    if (engine.state === 'up') {
+      out = await postEngine(engine, body);
+      if (out && out.data) return out;
+      wakeEngine(engine);            // it answered earlier but not now → it went back to sleep
+    }
+
+    const ticker = setInterval(
+      () => onWaiting(Math.round((Date.now() - engine.wakeStarted) / 1000)), 1000
+    );
+    const awake = await engine.waking;
+    clearInterval(ticker);
+    if (!awake) return out;
+    return postEngine(engine, body);
+  }
+
+  // ─── Engine on this PC ─────────────────────────────────────────────────────
+  // Only contacted after a click (choosing it, or GRAB), never on page load,
+  // because the browser shows a permission prompt the first time.
+  function showLocalSetup(blocked) {
+    setStatus(blocked ? '// the browser is blocking the engine on this PC' : '// no engine found on this PC', 'error');
+    const box = document.getElementById('error-detail');
+    const blockedNote = blocked
+      ? `<b>This browser is set to block this page from reaching apps on this PC.</b>
+         Click the icon at the left end of the address bar → Site settings → set <b>Local network access</b> to <b>Allow</b>, then press <b>check again</b> below.<br><br>
+         Not set up yet? Then start here:<br><br>`
+      : '';
+    box.innerHTML = `
+      <div class="err-box info-box">
+        <div class="err-title">${blocked ? 'Allow this page to reach the engine on this PC' : 'Set up the engine on this PC — one time'}</div>
+        <div class="err-fix">
+          ${blockedNote}
+          YouTube, Facebook and other big platforms block cloud servers, but not home internet connections.
+          An engine on this PC uses your own connection, so it keeps working where the cloud engines fail.<br><br>
+          <b>1.</b> Install <a href="https://www.docker.com/products/docker-desktop/" target="_blank">Docker Desktop</a> (free), open it and let it finish starting.<br>
+          <b>2.</b> Open <b>PowerShell</b>, paste this line and press Enter:
+          <div class="cmd"><code id="setup-cmd">${esc(LOCAL_SETUP_CMD)}</code><button type="button" class="mini-btn" id="copy-setup">copy</button></div>
+          <b>3.</b> Press <b>check again</b>. If the browser asks whether this site may connect to apps on this device, choose <b>Allow</b>.<br><br>
+          <button type="button" class="mini-btn" id="recheck-local">check again</button><br><br>
+          The engine starts by itself whenever Docker Desktop is open. When it is not running, GRABR uses the cloud engines.
+          Already set up but not found? Open the site settings from the address bar and allow <b>Local network access</b> for this page.
+          On a phone, leave Engine on Cloud.
+        </div>
+      </div>
+    `;
+    box.querySelector('#recheck-local').addEventListener('click', () => checkLocalEngine());
+    box.querySelector('#copy-setup').addEventListener('click', async e => {
+      try { await navigator.clipboard.writeText(LOCAL_SETUP_CMD); e.target.textContent = 'copied'; }
+      catch { e.target.textContent = 'select + copy'; }
+    });
+  }
+
+  async function checkLocalEngine() {
+    clearResult();
+    setStatus('<span class="spinner"></span> looking for the engine on this PC...', 'loading');
+    const ok = await pingEngine(localEngine, 6000);
+    if (!useLocal) return;                       // switched back to Cloud meanwhile
+    if (ok) setStatus('// engine on this PC is running ✓ — it will be used first', 'success');
+    else showLocalSetup((await localPermission()) === 'denied');
+  }
+
+  const engineSel = document.getElementById('engine');
+  engineSel.value = useLocal ? 'local' : 'cloud';
+  engineSel.addEventListener('change', () => {
+    useLocal = engineSel.value === 'local';
+    setPref('grabr.engine', useLocal ? 'local' : 'cloud');
+    if (useLocal) checkLocalEngine();
+    else { clearResult(); setStatus('// ready'); }
+  });
+
+  // ─── Main ──────────────────────────────────────────────────────────────────
+  async function grab() {
+    const urlInput = document.getElementById('url-input');
+    const url = urlInput.value.trim();
+
+    if (!url) {
+      setStatus('// paste a video URL first', 'error');
+      urlInput.focus();
+      return;
+    }
+
+    // Giphy and direct file links are saved by the browser itself
+    const direct = resolveDirect(url);
+    if (direct) {
+      clearResult();
+      renderDirect(direct);
+      return;
+    }
+
+    const quality   = document.getElementById('quality').value;
+    const formatVal = document.getElementById('format').value;
+    const audioOnly = ['mp3','ogg','wav','opus'].includes(formatVal);
+
+    const btn = document.getElementById('grab-btn');
+    btn.disabled = true;
+    clearResult();
+    setStatus('<span class="spinner"></span> contacting engine...', 'loading');
+
+    const isTwitter = /twitter\.com|x\.com|t\.co/.test(url);
+    const body = { url };
+    if (quality !== 'max') body.videoQuality = quality;
+    if (audioOnly) {
+      body.downloadMode = 'audio';
+      if (formatVal !== 'mp3') body.audioFormat = formatVal;
+    } else if (formatVal === 'mute') {
+      body.downloadMode = 'mute';
+    }
+    if (isTwitter) body.alwaysProxy = true;
+
+    // Ask the engines one after another until one delivers:
+    // this PC first (if switched on), then cloud engines that are awake, then the rest
+    const rank = e => (e.local ? 0 : e.state === 'up' ? 1 : 2);
+    const order = activeEngines().sort((a, b) => rank(a) - rank(b));
+    const tried = [];
+    let data = null;
+    let winner = null;
+
+    for (const engine of order) {
+      setStatus(`<span class="spinner"></span> contacting ${esc(engine.name)} engine...`, 'loading');
+      const out = await askEngine(engine, body, secs =>
+        setStatus(`<span class="spinner"></span> ${esc(engine.name)} engine is waking up… ${secs}s`, 'loading')
+      );
+
+      if (!out) {
+        tried.push(engine.local
+          ? { engine, code: 'engine_off', msg: 'not running' }
+          : { engine, code: 'engine_wake', msg: 'no answer' });
+        continue;
+      }
+      if (!out.data) { tried.push({ engine, code: '', msg: `non-JSON answer (HTTP ${out.res.status})` }); continue; }
+
+      const d = out.data;
+      if (out.res.ok && ['redirect', 'tunnel', 'picker'].includes(d.status)) { data = d; winner = engine; break; }
+
+      const errVal = d.error;
+      const code = (errVal && errVal.code) || '';
+      const msg = d.text
+        || (typeof errVal === 'string' ? errVal : code)
+        || `unexpected response: ${d.status}`;
+      tried.push({ engine, code, msg });
+      if (FINAL_ERRORS.some(p => code.startsWith(p))) break;
+    }
+
+    if (!data) {
+      // show the most telling answer, and list what every engine said
+      // order of preference: a specific answer, any engine answer, a garbled answer, silence
+      const answered = tried.filter(t => t.code && t.code !== 'engine_wake' && t.code !== 'engine_off');
+      const best = answered.find(t => !VAGUE_ERRORS.some(p => t.code.startsWith(p)))
+        || answered[0]
+        || tried.find(t => !t.code)
+        || { code: 'engine_wake', msg: 'no answer' };
+      showError(best.code, best.msg, tried);
+      btn.disabled = false;
+      return;
+    }
+
+    // ── Success ──────────────────────────────────────────────────────────────
+    if (data.status === 'picker') renderPicker(data, winner);
+    else renderSingle(data, winner);
+
+    btn.disabled = false;
+  }
+
+  function renderSingle(data, engine) {
+    setStatus(`// ready ↓ &nbsp;·&nbsp; via ${esc(engine.name)}`, 'success');
+    const filename = data.filename || guessFilename(data.url);
+    const result = document.getElementById('result');
+    result.innerHTML = `
+      <div class="result-inner">
+        <div class="result-filename">
+          <span>File</span>${esc(filename)}
+        </div>
+        <a class="dl-btn" href="${esc(data.url)}" download="${esc(filename)}" target="_blank">↓ Download</a>
+      </div>
+    `;
+    result.className = 'visible';
+  }
+
+  function renderPicker(data, engine) {
+    const items = data.picker || [];
+    setStatus(`// ${items.length} items found — pick one &nbsp;·&nbsp; via ${esc(engine.name)}`, 'success');
+    const result = document.getElementById('result');
+    let html = '<div id="picker-grid">';
+    items.forEach((item, i) => {
+      const label = item.type === 'photo' ? `Photo ${i+1}` : `Video ${i+1}`;
+      const thumb = item.thumb ? `<img src="${esc(item.thumb)}" alt="${label}" loading="lazy" />` : '';
+      html += `<div class="picker-item">${thumb}<a href="${esc(item.url)}" download="${label}" target="_blank">↓ ${label}</a></div>`;
+    });
+    // Separate audio track if present
+    if (data.audio) {
+      html += `<div class="picker-item"><a href="${esc(data.audio)}" download="audio" target="_blank">↓ Audio track</a></div>`;
+    }
+    html += '</div>';
+    result.innerHTML = html;
+    result.className = 'visible';
+  }
+
+  // Wake the cloud engines as soon as the page opens, so they are ready by the time a link is pasted.
+  // (The engine on this PC is never contacted on page load.)
+  ENGINES.filter(e => !e.local).forEach(wakeEngine);
+</script>
+</body>
+</html>
